@@ -1,0 +1,142 @@
+import { pickTavernQuote, type QuoteTrigger, type TavernQuote } from './tavernQuotes';
+
+const MENU_ROTATE_MS = 28_000;
+const IDLE_MS = 20_000;
+
+/** 主菜单语录：首句 + 28s 轮播 + 20s 无操作 idle */
+export function createMenuQuoteController() {
+  let quote = $state<TavernQuote | null>(null);
+  let rotateTimer: ReturnType<typeof setInterval> | null = null;
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function show(trigger: QuoteTrigger = 'menu'): void {
+    quote = pickTavernQuote(trigger);
+  }
+
+  function resetIdle(): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => show('idle'), IDLE_MS);
+  }
+
+  function start(): void {
+    show('menu');
+    resetIdle();
+    rotateTimer = setInterval(() => show('menu'), MENU_ROTATE_MS);
+  }
+
+  function stop(): void {
+    if (rotateTimer) clearInterval(rotateTimer);
+    if (idleTimer) clearTimeout(idleTimer);
+    rotateTimer = null;
+    idleTimer = null;
+  }
+
+  function onActivity(): void {
+    resetIdle();
+  }
+
+  return {
+    get quote() {
+      return quote;
+    },
+    start,
+    stop,
+    onActivity,
+  };
+}
+
+/** 对局语录：由 GameView 按事件调用 show */
+export function createGameQuoteController() {
+  let quote = $state<TavernQuote | null>(null);
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  let gameStartShown = false;
+  let lastBigScorePreview = false;
+  let prevPhase: string | null = null;
+
+  function show(trigger: QuoteTrigger): void {
+    const picked = pickTavernQuote(trigger);
+    if (picked) quote = picked;
+  }
+
+  function resetIdle(active: boolean): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = null;
+    if (!active) return;
+    idleTimer = setTimeout(() => show('idle'), IDLE_MS);
+  }
+
+  function onActivity(active: boolean): void {
+    resetIdle(active);
+  }
+
+  function stop(): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = null;
+    gameStartShown = false;
+    lastBigScorePreview = false;
+    prevPhase = null;
+  }
+
+  function handlePhaseChange(
+    phase: string | undefined,
+    rollCount: number,
+  ): void {
+    const p = phase ?? null;
+    if (
+      p === 'selecting' &&
+      rollCount === 0 &&
+      (prevPhase === 'dice_selection' || prevPhase === 'lobby') &&
+      !gameStartShown
+    ) {
+      gameStartShown = true;
+      show('game_start');
+    }
+    prevPhase = p;
+  }
+
+  function handlePreview(preview: number, isMyTurn: boolean): void {
+    const big = preview >= 1000;
+    if (isMyTurn && big && !lastBigScorePreview) {
+      show('big_score');
+    }
+    lastBigScorePreview = big;
+  }
+
+  function handleTurnScoreDelta(delta: number, isMyTurn: boolean): void {
+    if (isMyTurn && delta >= 1000) {
+      show('big_score');
+    }
+  }
+
+  function handleCombo(hasCombo: boolean): void {
+    if (hasCombo) show('combo');
+  }
+
+  function handlePhaseQuote(
+    phase: string | undefined,
+    isWinner: boolean,
+  ): void {
+    if (phase === 'bust') {
+      show('bust');
+      return;
+    }
+    if (phase === 'game_over') {
+      show(isWinner ? 'win' : 'lose');
+    }
+  }
+
+  return {
+    get quote() {
+      return quote;
+    },
+    show,
+    resetIdle,
+    onActivity,
+    stop,
+    handlePhaseChange,
+    handlePreview,
+    handleTurnScoreDelta,
+    handleCombo,
+    handlePhaseQuote,
+  };
+}

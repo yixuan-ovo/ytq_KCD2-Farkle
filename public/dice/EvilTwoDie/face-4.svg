@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="dice face 4">
+  <rect x="6" y="6" width="116" height="116" rx="18" fill="#2A2323" stroke="#8B1E1E" stroke-width="3"/>
+  <rect x="18" y="18" width="92" height="92" rx="12" fill="none" stroke="#8B1E1E55" stroke-width="2"/>
+  <circle cx="36" cy="36" r="8" fill="#E25A5A"/>
+    <circle cx="92" cy="36" r="8" fill="#E25A5A"/>
+    <circle cx="36" cy="92" r="8" fill="#E25A5A"/>
+    <circle cx="92" cy="92" r="8" fill="#E25A5A"/>
+</svg>

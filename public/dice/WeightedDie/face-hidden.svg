@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="hidden">
+  <rect x="6" y="6" width="116" height="116" rx="18" fill="#D9D0B5" stroke="#6A4A00" stroke-width="3"/>
+  <rect x="18" y="18" width="92" height="92" rx="12" fill="none" stroke="#6A4A0055" stroke-width="2"/>
+  <g transform="translate(64 64) scale(1.35)" fill="#3A2500"><path d="M-8 14 L-4-6 L4-6 L8 14 Z"/><rect x="-12" y="14" width="24" height="4" rx="1"/><line x1="0" y1="-14" x2="0" y2="-6" stroke="#3A2500" stroke-width="3"/></g>
+</svg>

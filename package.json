@@ -1,0 +1,34 @@
+{
+  "name": "kcd2-farkle",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.app.json --noEmit",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "dice:generate": "node scripts/generate-themed-dice.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "worker:dev": "yarn --cwd worker dev",
+    "worker:deploy": "yarn --cwd worker deploy",
+    "worker:typecheck": "yarn --cwd worker typecheck"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@tsconfig/svelte": "^5.0.8",
+    "@types/node": "^24.12.0",
+    "@vitest/ui": "^4.1.2",
+    "svelte": "^5.33.0",
+    "svelte-check": "^4.2.1",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1",
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0"
+  }
+}

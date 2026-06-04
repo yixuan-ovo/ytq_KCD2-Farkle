@@ -1,0 +1,39 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="diceBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F7F0DD"></stop>
+      <stop offset="100%" stop-color="#E5D6B4"></stop>
+    </linearGradient>
+
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.25"></feDropShadow>
+    </filter>
+  </defs>
+
+  <!-- 外层 -->
+  <rect x="6" y="6" width="116" height="116" rx="18" fill="url(#diceBg)" stroke="#C7A76B" stroke-width="3" filter="url(#shadow)"></rect>
+
+  <!-- 内层 -->
+  <rect x="18" y="18" width="92" height="92" rx="12" fill="none" stroke="#D8C7A0" stroke-width="2"></rect>
+
+  <!-- 皇冠 -->
+  <g transform="translate(64 58)" fill="#7A5633">
+    <path d="
+      M -18 12
+      L -14 -8
+      L -5 0
+      L 0 -12
+      L 5 0
+      L 14 -8
+      L 18 12
+      Z
+      "></path>
+
+    <rect x="-18" y="12" width="36" height="6" rx="2"></rect>
+  </g>
+
+  <!-- 提示文字 -->
+  <text x="64" y="92" text-anchor="middle" font-size="10" fill="#8A6B44" font-family="serif">
+    未投掷
+  </text>
+</svg>

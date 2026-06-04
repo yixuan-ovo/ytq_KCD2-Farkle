@@ -1,0 +1,376 @@
+{
+  "ivory": {
+    "faces": [
+      "face-1",
+      "face-2",
+      "face-3",
+      "face-4",
+      "face-5",
+      "face-6",
+      "face-devil",
+      "face-unrolled"
+    ]
+  },
+  "dice": {
+    "NormalDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "ArankaDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "CautiousCheatDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "EvilTwoDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "EvilThreeDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "EvilOneDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "DevilDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "BadLuckDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "EvenDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "OddDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "LuckyDie1": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "LuckyDie2": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "GreasyDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "BadDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "GrozavLuckyDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "HeavenlyDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "HolyTrinityDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "HugoDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "KingDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "LousyDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "MathematicianDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "MolarDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "PremolarDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "WisdomToothDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "PaintedDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "PieDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "SadGlazerDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "StAntiochDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "StStephenDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "LowRollDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "StripDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "RollThreeDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "UnbalancedDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "UnluckyDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "CharioteerDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "WeightedDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ]
+  }
+}
