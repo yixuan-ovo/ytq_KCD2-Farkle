@@ -3,6 +3,7 @@ import {
   handleBank,
   handleKeep,
   handleRoll,
+  handleSelectDice,
   joinPlayer,
   leavePlayer,
   normalizeTurnPhase,
@@ -29,7 +30,13 @@ export class GameRoom implements DurableObject {
   private async ensureStateLoaded(): Promise<void> {
     if (this.stateLoaded) return;
     const saved = await this.ctx.storage.get<GameState>(GAME_STATE_KEY);
-    if (saved) this.gameState = saved;
+    if (saved) {
+      this.gameState = {
+        ...saved,
+        pendingSelection: saved.pendingSelection ?? [],
+        lastTurnEnd: saved.lastTurnEnd ?? null,
+      };
+    }
     this.stateLoaded = true;
   }
 
@@ -116,6 +123,13 @@ export class GameRoom implements DurableObject {
         this.handleAction(ws, meta, () => handleBank(this.gameState, meta.playerId!, dieIds));
         break;
       }
+      case 'selectDice':
+        if (!Array.isArray(msg.dieIds)) {
+          this.sendError(ws, '无效的选骰请求');
+          break;
+        }
+        this.handleAction(ws, meta, () => handleSelectDice(this.gameState, meta.playerId!, msg.dieIds));
+        break;
       case 'leave':
         this.handleLeave(ws, meta);
         break;

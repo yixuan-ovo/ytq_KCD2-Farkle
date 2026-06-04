@@ -20,6 +20,8 @@ export function createInitialState(): GameState {
     hostDice: [],
     guestDice: [],
     lastBust: null,
+    pendingSelection: [],
+    lastTurnEnd: null,
   };
 }
 
@@ -96,6 +98,8 @@ export function startGame(
     hostDice: [] as string[],
     guestDice: [] as string[],
     lastBust: null,
+    pendingSelection: [],
+    lastTurnEnd: null,
     players: [
       { ...state.players[0], totalScore: 0, turnScore: 0 },
       { ...state.players[1], totalScore: 0, turnScore: 0 },
@@ -167,6 +171,10 @@ function randomSeed(): number {
   return buf[0]!;
 }
 
+function clearEphemeral(state: GameState): GameState {
+  return { ...state, pendingSelection: [], lastTurnEnd: null, lastBust: null };
+}
+
 function endTurn(state: GameState, busted: boolean): GameState {
   const idx = state.currentPlayerIndex;
   const bustedBy = currentPlayerId(state);
@@ -184,6 +192,8 @@ function endTurn(state: GameState, busted: boolean): GameState {
     turnScore: 0,
     rollCount: 0,
     awaitingKeep: false,
+    pendingSelection: [],
+    lastTurnEnd: null,
     lastBust: busted
       ? {
           by: bustedBy,
@@ -208,6 +218,7 @@ function rollUnkeptDice(state: GameState): GameState {
     dice,
     rollCount: state.rollCount + 1,
     awaitingKeep: true,
+    pendingSelection: [],
   });
 }
 
@@ -217,7 +228,7 @@ export function handleRoll(state: GameState, by: PlayerId): GameState | { error:
     return { error: '当前不能掷骰' };
   }
   if (state.phase === 'bust' || state.phase === 'turn_end' || state.phase === 'hot_dice') {
-    return { ...state, phase: 'selecting', lastBust: null };
+    return clearEphemeral({ ...state, phase: 'selecting' });
   }
 
   if (state.awaitingKeep) return { error: '请先选择要保留的骰子' };
@@ -254,6 +265,7 @@ function hotDiceFromKeep(state: GameState): GameState {
     dice: resetDiceForHotDice(state.dice),
     rollCount: 0,
     awaitingKeep: false,
+    pendingSelection: [],
   };
 }
 
@@ -275,9 +287,26 @@ export function handleKeep(
   }
 
   const hasUnkept = kept.dice.some((d) => d.active && !d.kept);
-  if (!hasUnkept) return kept;
+  if (!hasUnkept) return { ...kept, pendingSelection: [] };
 
-  return rollUnkeptDice(kept);
+  return rollUnkeptDice({ ...kept, pendingSelection: [] });
+}
+
+export function handleSelectDice(
+  state: GameState,
+  by: PlayerId,
+  dieIds: number[],
+): GameState | { error: string } {
+  state = normalizeTurnPhase(state);
+  if (currentPlayerId(state) !== by) return { error: '还没轮到你' };
+  if (state.phase !== 'selecting') return { error: '当前不能选骰' };
+  if (state.rollCount === 0) return { error: '请先掷骰' };
+
+  const ids = [...new Set(normalizeDieIds(dieIds))];
+  const selectable = new Set(state.dice.filter((d) => d.active && !d.kept).map((d) => d.id));
+  if (!ids.every((id) => selectable.has(id))) return { error: '无效的选骰' };
+
+  return { ...state, pendingSelection: ids };
 }
 
 export function handleBank(
@@ -306,6 +335,8 @@ export function handleBank(
   const idx = working.currentPlayerIndex;
   const players = [...working.players] as GameState['players'];
   const earned = working.turnScore;
+  const bankingBy = currentPlayerId(working);
+  const keptSnapshot = working.dice.filter((d) => d.kept).map((d) => ({ ...d }));
   const newTotal = players[idx].totalScore + earned;
   players[idx] = { ...players[idx], totalScore: newTotal, turnScore: 0 };
 
@@ -318,6 +349,8 @@ export function handleBank(
       awaitingKeep: false,
       winner: players[idx].id,
       lastBust: null,
+      pendingSelection: [],
+      lastTurnEnd: null,
     };
   }
 
@@ -333,6 +366,12 @@ export function handleBank(
     rollCount: 0,
     awaitingKeep: false,
     lastBust: null,
+    pendingSelection: [],
+    lastTurnEnd: {
+      by: bankingBy,
+      earned,
+      dice: keptSnapshot,
+    },
   };
 }
 
@@ -343,7 +382,7 @@ export function normalizeTurnPhase(state: GameState): GameState {
     state.phase === 'hot_dice' ||
     state.phase === 'rolling'
   ) {
-    return { ...state, phase: 'selecting', lastBust: null };
+    return clearEphemeral({ ...state, phase: 'selecting' });
   }
   return state;
 }
@@ -367,5 +406,7 @@ export function leavePlayer(state: GameState, who: PlayerId): GameState {
     hostDice: [],
     guestDice: [],
     lastBust: null,
+    pendingSelection: [],
+    lastTurnEnd: null,
   };
 }
