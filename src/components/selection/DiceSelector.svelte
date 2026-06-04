@@ -123,6 +123,7 @@
 
   .dice-selector__header {
     text-align: center;
+    padding-top: var(--space-2);
   }
 
   .dice-selector__title {

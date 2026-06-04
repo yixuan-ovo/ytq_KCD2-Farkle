@@ -48,7 +48,7 @@
           <JoinForm
             {initialName}
             {initialRoomId}
-            initialTab="join"
+            initialTab={initialRoomId ? 'join' : 'create'}
             joinOnly={!!initialRoomId}
             onEnter={handleEnter}
           />

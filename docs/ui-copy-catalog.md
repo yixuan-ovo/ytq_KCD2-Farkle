@@ -206,6 +206,8 @@
 
 ## 5. 选骰阶段 `DiceSelector.svelte`
 
+> **布局：** 选骰阶段 `GameView` 使用 `game-page__main--pick`（顶栏下 `padding-top: var(--space-4)`）；标题区另有 `padding-top`，避免「选择特殊骰子」贴顶。
+
 | 元素 | 文案 |
 |------|------|
 | 标题 | 选择特殊骰子 |

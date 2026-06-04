@@ -86,7 +86,7 @@ yarn worker:deploy
 
 **与上游差异：** 本仓库为 **Worker 权威联机** + 独立 UI，非 [luyu14039/KCD2-Farkle](https://github.com/luyu14039/KCD2-Farkle) 的 P2P（Trystero）版。
 
-**近期（2026-06-04）：** 主题骰 SVG、GSAP 掷骰动画；邀请链接仅房间号；爆点展示 `lastBust` 骰面；Hot Dice 盘内续掷；离开房间同步。详见 [Memory.md §1](Memory.md)。
+**近期（2026-06-04）：** 主题骰 SVG、GSAP 掷骰动画；邀请链接仅房间号；联机 UX（选骰同步、收分提醒）；根路径默认新开一桌；详见 [Memory.md §1](Memory.md)。
 
 **线框：** [UI-REVIEW §4](docs/kcd2-farkle/UI-REVIEW.md#4-界面线框) · [DESIGN §5](docs/kcd2-farkle/DESIGN.md#5-页面线框信息架构) · [Memory §3.5](Memory.md)
 

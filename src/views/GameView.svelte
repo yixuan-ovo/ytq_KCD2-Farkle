@@ -469,6 +469,7 @@
   .game-page__main--pick {
     min-height: 0;
     overflow: hidden;
+    padding-top: var(--space-4);
   }
 
   .game-page__play {
