@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getCatalogFaceUrl,
   getDieFaceUrl,
   getPlaceholderFaceUrl,
   getThemedFaceUrl,
@@ -17,6 +18,16 @@ describe('themed dice textures', () => {
 
   it('resolves devil face for value 0', () => {
     expect(getDieFaceUrl({ value: 0, type: 'DevilDie' })).toContain('dice/DevilDie/face-devil.svg');
+  });
+
+  it('maps DevilDie wildcard face 1 to devil asset', () => {
+    expect(getThemedFaceUrl('DevilDie', 1)).toContain('dice/DevilDie/face-devil.svg');
+    expect(getDieFaceUrl({ value: 1, type: 'DevilDie' })).toContain('dice/DevilDie/face-devil.svg');
+  });
+
+  it('catalog preview uses devil for DevilDie wildcard face', () => {
+    expect(getCatalogFaceUrl('DevilDie', 1)).toContain('dice/DevilDie/face-devil.svg');
+    expect(getCatalogFaceUrl('DevilDie', 2)).toContain('dice/ivory/face-2.svg');
   });
 
   it('falls back to NormalDie for unknown type', () => {

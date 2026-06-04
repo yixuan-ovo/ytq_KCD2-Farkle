@@ -5,6 +5,7 @@ import {
   handleBank,
   handleKeep,
   handleRoll,
+  handleSelectDice,
   leavePlayer,
   startGame,
   submitDicePick,
@@ -384,5 +385,81 @@ describe('leavePlayer', () => {
     expect(afterLeave.phase).toBe('lobby');
     expect(afterLeave.players[1].name).toBe('');
     expect(afterLeave.players[0].name).toBe('A');
+  });
+});
+
+describe('handleSelectDice', () => {
+  function rolledState(): GameState {
+    return {
+      ...readyToPlay(),
+      phase: 'selecting',
+      rollCount: 1,
+      awaitingKeep: true,
+      turnScore: 0,
+      dice: diceWithValues([1, 2, 3, 4, 5, 6]),
+      pendingSelection: [],
+      lastTurnEnd: null,
+    };
+  }
+
+  it('broadcasts pending selection for current player', () => {
+    const result = handleSelectDice(rolledState(), 'host', [0, 2]);
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.pendingSelection).toEqual([0, 2]);
+  });
+
+  it('rejects selection before first roll', () => {
+    const state = readyToPlay();
+    expect(handleSelectDice(state, 'host', [0])).toEqual({ error: '请先掷骰' });
+  });
+
+  it('clears pending selection after keep', () => {
+    let state = handleSelectDice(rolledState(), 'host', [0]) as GameState;
+    expect(state.pendingSelection).toEqual([0]);
+    const kept = handleKeep(state, 'host', [0]) as GameState;
+    expect(kept.pendingSelection).toEqual([]);
+  });
+});
+
+describe('lastTurnEnd', () => {
+  it('snapshots kept dice when banking', () => {
+    let state = readyToPlay();
+    state = {
+      ...state,
+      phase: 'selecting',
+      rollCount: 1,
+      awaitingKeep: true,
+      turnScore: 100,
+      dice: diceWithValues([1, 2, 3, 4, 5, 6]).map((d, i) => ({ ...d, kept: i === 0 })),
+    };
+    const result = handleBank(state, 'host');
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.phase).toBe('turn_end');
+    expect(result.lastTurnEnd).toEqual({
+      by: 'host',
+      earned: 100,
+      dice: [expect.objectContaining({ id: 0, value: 1, kept: true })],
+    });
+    expect(result.currentPlayerIndex).toBe(1);
+  });
+
+  it('clears lastTurnEnd when next player rolls', () => {
+    let state = readyToPlay();
+    state = {
+      ...state,
+      phase: 'turn_end',
+      currentPlayerIndex: 1,
+      lastTurnEnd: {
+        by: 'host',
+        earned: 200,
+        dice: diceWithValues([1]).map((d) => ({ ...d, kept: true })),
+      },
+    };
+    const next = handleRoll(state, 'guest');
+    expect('error' in next).toBe(false);
+    if ('error' in next) return;
+    expect(next.lastTurnEnd).toBeNull();
   });
 });
