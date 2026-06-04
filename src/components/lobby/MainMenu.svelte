@@ -27,8 +27,8 @@
 
 <nav class="main-menu" aria-label="主菜单">
   <div class="main-menu__header">
-    <div class="main-menu__crown" aria-hidden="true">♛</div>
-    <h1 class="main-menu__title">骰子酒馆</h1>
+    <div class="main-menu__crown" aria-hidden="true">🎲</div>
+    <h1 class="main-menu__title">亨利的骰桌</h1>
     <p class="main-menu__subtitle">天国拯救2 · 特罗斯基，1403年</p>
   </div>
 

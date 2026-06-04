@@ -100,7 +100,7 @@
       aria-selected={tab === 'join'}
       onclick={() => switchTab('join')}
     >
-      {joinOnly ? '加入牌局' : '加入牌局'}
+      {joinOnly ? '加入骰局' : '加入骰局'}
     </button>
     {#if !joinOnly}
       <span class="tavern-card__tab-indicator" class:tavern-card__tab-indicator--join={tab === 'join'}></span>
@@ -161,7 +161,7 @@
         <p>轮流掷骰、计分并保留组合，可继续再掷或计分并跳过。先至 目标分数 者胜。</p>
         <ul>
           <li>1 → 100 分，5 → 50 分</li>
-          <li>三条、顺子（1–6）有额外加分</li>
+          <li>三个及以上相同点数、至少五个顺子有额外加分</li>
           <li>无得分骰即本轮作废，本回合得分清零</li>
           <li>六枚皆可计分时为全部得分，可再掷一轮</li>
         </ul>

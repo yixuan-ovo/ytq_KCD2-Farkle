@@ -11,7 +11,7 @@
 
 <header class="header">
   <div class="header__brand">
-    <span class="header__logo" aria-hidden="true">♛</span>
+    <span class="header__logo" aria-hidden="true">🍺</span>
     <span class="header__title">骰子酒馆</span>
   </div>
   <div class="header__meta">
