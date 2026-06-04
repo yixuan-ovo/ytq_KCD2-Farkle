@@ -54,11 +54,25 @@ export function getThemedFaceUrl(dieType: string, face: ThemedFace): string {
   const base = assetBase();
   if (face === 'hidden') return `${base}dice/${id}/face-hidden.svg`;
   if (face === 0) return `${base}dice/${id}/face-devil.svg`;
+  const def = DIE_REGISTRY[id];
+  if (def?.wildcardFace !== undefined && face === def.wildcardFace) {
+    return `${base}dice/${id}/face-devil.svg`;
+  }
   return `${base}dice/${id}/face-${face}.svg`;
 }
 
 export function getDieFaceUrl(die: { value: DieFace; type: string }): string {
   return getThemedFaceUrl(die.type, die.value);
+}
+
+/** 图鉴六面预览：百搭面用主题恶魔图，其余仍用 ivory 通用面 */
+export function getCatalogFaceUrl(dieType: string, face: DieFace): string {
+  const id = resolveDieType(dieType);
+  const def = DIE_REGISTRY[id];
+  if (def?.wildcardFace === face) {
+    return getThemedFaceUrl(id, 0);
+  }
+  return getFaceTextureUrl(face);
 }
 
 /** 首掷前占位：各骰主题的 hidden 面（中心 icon） */

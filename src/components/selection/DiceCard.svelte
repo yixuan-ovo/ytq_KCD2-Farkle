@@ -2,7 +2,7 @@
   import type { DieDefinition } from '$lib/game/diceRegistry';
   import { CATEGORY_LABELS } from '$lib/game/diceRegistry';
   import { getFaceWeightPercents, getFaceWeightVisuals } from '$lib/game/weightTiers';
-  import { getFaceTextureUrl } from '$lib/assets/diceTextures';
+  import { getCatalogFaceUrl } from '$lib/assets/diceTextures';
   import type { DieFace } from '$lib/game/types';
 
   interface Props {
@@ -51,11 +51,15 @@
       {@const pct = facePercents[i]}
       <span
         class="dice-card__face dice-card__face--{visual}"
-        title={visual === 'blocked' ? `点数 ${face}：无法掷出` : `点数 ${face}：约 ${pct}%`}
+        title={visual === 'blocked'
+          ? `点数 ${face}：无法掷出`
+          : die.wildcardFace === face
+            ? `点数 ${face}：恶魔之首（百搭），约 ${pct}%`
+            : `点数 ${face}：约 ${pct}%`}
       >
         <img
           class="dice-card__face-img"
-          src={getFaceTextureUrl(face)}
+          src={getCatalogFaceUrl(die.id, face)}
           alt=""
           draggable="false"
         />
