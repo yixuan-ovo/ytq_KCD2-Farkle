@@ -7,18 +7,34 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies & build output
 node_modules
 dist
 dist-ssr
 *.local
 package-lock.json
+
+# Vite / TypeScript cache
+.vite
+*.tsbuildinfo
+
+# Cloudflare Wrangler (root + worker/)
 .wrangler
+
+# Environment — commit .env.example only
+.env
+.env.*
+!.env.example
+
+# Test output
+coverage
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
