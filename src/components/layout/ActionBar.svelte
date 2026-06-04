@@ -10,6 +10,7 @@
     lobbyWaitText?: string;
     dicePickWaitText?: string;
     opponentWaitName?: string;
+    opponentSelecting?: boolean;
     onRoll?: () => void;
     onKeep?: () => void;
     onBank?: () => void;
@@ -26,6 +27,7 @@
     lobbyWaitText = '',
     dicePickWaitText = '',
     opponentWaitName = '对手',
+    opponentSelecting = false,
     onRoll,
     onKeep,
     onBank,
@@ -46,7 +48,11 @@
   {:else if !isMyTurn}
     <p class="action-bar__wait action-bar__wait--opponent">
       <span class="action-bar__hourglass" aria-hidden="true">⏳</span>
-      等待 <strong class="action-bar__opponent-name">{opponentWaitName}</strong> 掷骰…
+      {#if opponentSelecting}
+        等待 <strong class="action-bar__opponent-name">{opponentWaitName}</strong> 选骰…
+      {:else}
+        等待 <strong class="action-bar__opponent-name">{opponentWaitName}</strong> 掷骰…
+      {/if}
     </p>
   {:else if showRollOnly}
     <div class="action-bar__buttons action-bar__buttons--single">

@@ -72,7 +72,7 @@
 <style>
   .game-hud {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) 0 var(--space-3);
@@ -86,6 +86,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    min-width: 0;
     opacity: 0.72;
     transition: opacity var(--duration-normal);
   }
@@ -132,6 +133,8 @@
     align-items: center;
     gap: 0.25rem;
     max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .game-hud__name-row--right {
@@ -152,7 +155,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 110px;
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 0;
   }
 
   .game-hud__score {
@@ -203,7 +208,6 @@
     }
 
     .game-hud__name {
-      max-width: 150px;
       font-size: 1rem;
     }
 

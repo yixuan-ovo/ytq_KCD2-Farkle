@@ -41,6 +41,17 @@ let pendingPickIds: string[] | null = null;
 let connectInFlight: Promise<void> | null = null;
 let connectTargetId: string | null = null;
 let leaveDisconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let selectDiceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSelectDiceSync(): void {
+  if (selectDiceTimer) clearTimeout(selectDiceTimer);
+  selectDiceTimer = setTimeout(() => {
+    selectDiceTimer = null;
+    if (!session.state || !getIsMyTurn() || session.state.phase !== 'selecting') return;
+    if (session.state.rollCount === 0) return;
+    socket.send({ type: 'selectDice', dieIds: [...session.selectedDieIds] });
+  }, 80);
+}
 
 function opponentId(you: PlayerId): PlayerId {
   return you === 'host' ? 'guest' : 'host';
@@ -123,6 +134,16 @@ function bindHandlers(): void {
           const die = state.dice.find((d) => d.id === id);
           return die != null && die.active && !die.kept;
         });
+
+        const hotDiceReady =
+          isMyTurn &&
+          state.phase === 'selecting' &&
+          state.rollCount === 0 &&
+          state.turnScore > 0 &&
+          state.dice.every((d) => d.active && !d.kept);
+        if (hotDiceReady) {
+          session.selectedDieIds = [];
+        }
       }
     },
     onError: (message) => {
@@ -230,6 +251,20 @@ export function getSelectionPreview(): number {
   const selectable = session.state.dice.filter((d) => d.active && !d.kept);
   const { valid, score } = evaluateSelection(selectable, session.selectedDieIds);
   return valid ? score : 0;
+}
+
+export function getMySelectedDieIds(): number[] {
+  if (!session.state || !getIsMyTurn() || session.state.rollCount === 0) return [];
+  return session.selectedDieIds;
+}
+
+export function getRemoteSelectedDieIds(): number[] {
+  if (!session.state || getIsMyTurn()) return [];
+  return session.state.pendingSelection ?? [];
+}
+
+export function isOpponentSelecting(): boolean {
+  return getRemoteSelectedDieIds().length > 0;
 }
 
 export function clearError(): void {
@@ -386,6 +421,7 @@ export function keepSelection(): void {
   if (!getCanKeep()) return;
   const ids = [...session.selectedDieIds];
   pendingKeepIds = ids;
+  session.selectedDieIds = [];
   socket.send({ type: 'keep', dieIds: ids });
 }
 
@@ -410,8 +446,10 @@ export function toggleDie(id: number): void {
   } else {
     session.selectedDieIds = [...session.selectedDieIds, id];
   }
+  scheduleSelectDiceSync();
 }
 
 export function clearSelection(): void {
   session.selectedDieIds = [];
+  scheduleSelectDiceSync();
 }

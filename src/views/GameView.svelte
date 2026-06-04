@@ -36,6 +36,9 @@
     getBothSeated,
     getDicePickWaitText,
     getSelectionPreview,
+    getMySelectedDieIds,
+    getRemoteSelectedDieIds,
+    isOpponentSelecting,
     clearError,
   } from '$lib/client/gameSession.svelte';
 
@@ -182,6 +185,17 @@
     const player = session.state.players.find((p) => p.id === bust.by);
     return player?.name ?? '';
   });
+
+  let turnEndPlayerName = $derived.by(() => {
+    const snap = session.state?.lastTurnEnd;
+    if (!snap || !session.state) return '';
+    const player = session.state.players.find((p) => p.id === snap.by);
+    return player?.name ?? '';
+  });
+
+  let mySelectedDieIds = $derived(getMySelectedDieIds());
+  let remoteSelectedDieIds = $derived(getRemoteSelectedDieIds());
+  let opponentSelecting = $derived(isOpponentSelecting());
 
   let isWinner = $derived(session.state?.winner != null && session.state.winner === session.you);
   let canRestart = $derived(session.you === 'host' && session.state?.phase === 'game_over');
@@ -360,7 +374,8 @@
                 <DiceTable onRules={() => (showRulesSheet = true)}>
                   <DiceBoard
                     dice={session.state.dice}
-                    selectedIds={session.selectedDieIds}
+                    selectedIds={mySelectedDieIds}
+                    remoteSelectedIds={remoteSelectedDieIds}
                     rollCount={session.state.rollCount}
                     turnScore={session.state.turnScore}
                     rolling={isRolling || physicsRolling}
@@ -395,6 +410,7 @@
         {lobbyWaitText}
         {dicePickWaitText}
         opponentWaitName={opponentName}
+        {opponentSelecting}
         turnScore={session.state?.turnScore ?? 0}
         onRoll={roll}
         onKeep={handleKeep}
@@ -410,6 +426,9 @@
       {opponentName}
       {bustPlayerName}
       lastBust={session.state?.lastBust ?? null}
+      lastTurnEnd={session.state?.lastTurnEnd ?? null}
+      {turnEndPlayerName}
+      you={session.you}
       {canRestart}
       onLeave={() => onLeave?.()}
       onRestart={restartGame}

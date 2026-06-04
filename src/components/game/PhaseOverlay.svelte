@@ -1,6 +1,6 @@
 <script lang="ts">
   import { scale } from 'svelte/transition';
-  import type { BustSnapshot, GamePhase } from '$lib/game/types';
+  import type { BustSnapshot, GamePhase, PlayerId, TurnEndSnapshot } from '$lib/game/types';
   import DicePiece from './DicePiece.svelte';
 
   interface Props {
@@ -11,6 +11,9 @@
     opponentName?: string;
     bustPlayerName?: string;
     lastBust?: BustSnapshot | null;
+    lastTurnEnd?: TurnEndSnapshot | null;
+    turnEndPlayerName?: string;
+    you?: PlayerId | null;
     canRestart?: boolean;
     onLeave?: () => void;
     onRestart?: () => void;
@@ -25,6 +28,9 @@
     opponentName = '对手',
     bustPlayerName = '',
     lastBust = null,
+    lastTurnEnd = null,
+    turnEndPlayerName = '',
+    you = null,
     canRestart = false,
     onLeave,
     onRestart,
@@ -42,6 +48,7 @@
 
   /** 仅展示本次掷出、未保留的骰（已得分置旁的不再显示） */
   let bustDice = $derived((lastBust?.dice ?? []).filter((d) => d.active && !d.kept));
+  let turnEndDice = $derived(lastTurnEnd?.dice ?? []);
 
   $effect(() => {
     if (phase === 'bust') {
@@ -72,14 +79,23 @@
       autoDismiss = false;
     } else if (phase === 'turn_end') {
       visible = true;
-      if (isMyTurn) {
+      autoDismiss = true;
+      if (lastTurnEnd) {
+        const who = turnEndPlayerName || opponentName;
+        if (lastTurnEnd.by === you) {
+          title = '收分成功';
+          subtitle = `+${lastTurnEnd.earned} 分已入账`;
+        } else {
+          title = '对手收分';
+          subtitle = `${who} 本回合 +${lastTurnEnd.earned}`;
+        }
+      } else if (isMyTurn) {
         title = '轮到你了';
         subtitle = '该你掷骰了';
       } else {
         title = '计分成功';
         subtitle = `等待 ${opponentName} 掷骰`;
       }
-      autoDismiss = true;
     } else {
       visible = false;
     }
@@ -87,7 +103,12 @@
 
   $effect(() => {
     if (!visible || !autoDismiss) return;
-    const duration = phase === 'bust' && bustDice.length > 0 ? 3100 : 2100;
+    const duration =
+      phase === 'bust' && bustDice.length > 0
+        ? 3100
+        : phase === 'turn_end' && turnEndDice.length > 0
+          ? 3100
+          : 2100;
     const timer = setTimeout(() => {
       visible = false;
       onDismiss?.();
@@ -113,9 +134,9 @@
       <h2
         id="phase-overlay-title"
         class="phase-overlay__title"
-        class:phase-overlay__title--gold={phase === 'hot_dice' || phase === 'game_over'}
+        class:phase-overlay__title--gold={phase === 'hot_dice' || phase === 'game_over' || (phase === 'turn_end' && lastTurnEnd != null && lastTurnEnd.by !== you)}
         class:phase-overlay__title--danger={phase === 'bust' && !isMyTurn}
-        class:phase-overlay__title--wine={phase === 'turn_end' && isMyTurn || (phase === 'bust' && isMyTurn)}
+        class:phase-overlay__title--wine={(phase === 'turn_end' && (isMyTurn || lastTurnEnd?.by === you)) || (phase === 'bust' && isMyTurn)}
       >
         {title}
       </h2>
@@ -124,6 +145,14 @@
       {#if phase === 'bust' && bustDice.length > 0}
         <div class="phase-overlay__dice" role="group" aria-label="爆点骰面">
           {#each bustDice as die (die.id)}
+            <DicePiece {die} />
+          {/each}
+        </div>
+      {/if}
+
+      {#if phase === 'turn_end' && turnEndDice.length > 0}
+        <div class="phase-overlay__dice" role="group" aria-label="收分骰面">
+          {#each turnEndDice as die (die.id)}
             <DicePiece {die} />
           {/each}
         </div>

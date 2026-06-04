@@ -19,6 +19,7 @@
   interface Props {
     dice: Die[];
     selectedIds?: number[];
+    remoteSelectedIds?: number[];
     rolling?: boolean;
     physicsRolling?: boolean;
     rollCount?: number;
@@ -30,6 +31,7 @@
   let {
     dice,
     selectedIds = [],
+    remoteSelectedIds = [],
     rolling = false,
     physicsRolling = false,
     rollCount = 0,
@@ -149,6 +151,7 @@
             hidden={physicsRolling}
             placeholder={showPlaceholder(die)}
             selected={selectedIds.includes(die.id)}
+            remoteSelected={remoteSelectedIds.includes(die.id)}
             onclick={onToggle ? () => onToggle(die.id) : undefined}
           />
           {#if label}

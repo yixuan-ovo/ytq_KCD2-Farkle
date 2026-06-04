@@ -6,6 +6,7 @@
   interface Props {
     die: Die;
     selected?: boolean;
+    remoteSelected?: boolean;
     rolling?: boolean;
     hidden?: boolean;
     placeholder?: boolean;
@@ -15,6 +16,7 @@
   let {
     die,
     selected = false,
+    remoteSelected = false,
     rolling = false,
     hidden = false,
     placeholder = false,
@@ -39,6 +41,7 @@
   type="button"
   class="dice-piece"
   class:dice-piece--selected={selected && !isKept}
+  class:dice-piece--remote-selected={remoteSelected && !isKept && !selected}
   class:dice-piece--kept={isKept}
   class:dice-piece--inactive={isInactive}
   class:dice-piece--devil={isDevil}
@@ -190,6 +193,21 @@
     transform: scale(0.65);
     opacity: 0.35;
     bottom: -14px;
+  }
+
+  .dice-piece--remote-selected {
+    transform: translateY(-6px) scale(1.03);
+  }
+
+  .dice-piece--remote-selected .dice-piece__body {
+    border-color: rgba(201, 168, 106, 0.75);
+    outline: 2px dashed rgba(201, 168, 106, 0.55);
+    outline-offset: 2px;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.35),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+      0 8px 14px rgba(0, 0, 0, 0.45),
+      0 0 12px 2px rgba(201, 168, 106, 0.2);
   }
 
   .dice-piece--kept {
