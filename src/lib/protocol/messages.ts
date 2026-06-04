@@ -8,6 +8,7 @@ export type ClientMessage =
   | { type: 'roll' }
   | { type: 'keep'; dieIds: number[] }
   | { type: 'bank'; dieIds?: number[] }
+  | { type: 'selectDice'; dieIds: number[] }
   | { type: 'leave' };
 
 /** 下发给客户端的状态（选骰阶段隐藏对手具体选择） */

@@ -103,6 +103,13 @@ export interface BustSnapshot {
   dice: Die[];
 }
 
+/** 最近一次收分结束时的骰面快照（供 UI 展示） */
+export interface TurnEndSnapshot {
+  by: PlayerId;
+  earned: number;
+  dice: Die[];
+}
+
 // ─────────────────────────────────────────────
 //  完整游戏状态
 // ─────────────────────────────────────────────
@@ -128,4 +135,8 @@ export interface GameState {
   guestDice: string[];
   /** 最近一次爆点骰面；回合继续掷骰后清除 */
   lastBust: BustSnapshot | null;
+  /** 当前行动玩家正在点的骰（预览，非法组合也允许） */
+  pendingSelection: number[];
+  /** 最近一次收分结束快照；下一玩家掷骰后清除 */
+  lastTurnEnd: TurnEndSnapshot | null;
 }
