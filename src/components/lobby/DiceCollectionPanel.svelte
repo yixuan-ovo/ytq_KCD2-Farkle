@@ -2,6 +2,7 @@
   import {
     CATEGORY_LABELS,
     getDiceByCategory,
+    getDieDescription,
     type DieCategory,
     type DieDefinition,
   } from '$lib/game/diceRegistry';
@@ -49,6 +50,10 @@
     Object.values(diceByCategory)
       .flat()
       .find((d) => d.id === selectedId) ?? diceByCategory.normal[0],
+  );
+
+  let selectedDescription = $derived(
+    selectedDie ? getDieDescription(selectedDie.id) : '',
   );
 
   let totalCount = $derived(Object.values(diceByCategory).flat().length);
@@ -122,9 +127,13 @@
           {#if wildcardNote(selectedDie)}
             <p class="codex__detail-note">{wildcardNote(selectedDie)}</p>
           {/if}
-          <p class="codex__detail-hint">
-            六面百分比由权重换算，与对局选骰界面相同。联机时在选骰阶段按房间规则选用。
-          </p>
+          {#if selectedDescription}
+            <div class="codex__detail-desc">
+              {#each selectedDescription.split('\n\n') as para, i (i)}
+                <p>{para}</p>
+              {/each}
+            </div>
+          {/if}
         </aside>
       {/if}
     </div>
@@ -309,9 +318,25 @@
     border-left: 3px solid var(--color-wine);
   }
 
-  .codex__detail-hint {
-    font-size: 0.75rem;
+  .codex__detail-desc {
+    font-size: 0.8125rem;
     line-height: 1.55;
-    color: rgba(44, 24, 16, 0.65);
+    color: rgba(44, 24, 16, 0.85);
+    margin-bottom: var(--space-2);
+  }
+
+  .codex__detail-desc p {
+    margin: 0 0 var(--space-2);
+  }
+
+  .codex__detail-desc p:last-child {
+    margin-bottom: 0;
+  }
+
+  .codex__detail-footnote {
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: rgba(44, 24, 16, 0.5);
+    margin: 0;
   }
 </style>

@@ -371,6 +371,36 @@
       "face-5.svg",
       "face-6.svg",
       "face-devil.svg"
+    ],
+    "FriarDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "PearlDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
+    ],
+    "TengriDie": [
+      "face-hidden.svg",
+      "face-1.svg",
+      "face-2.svg",
+      "face-3.svg",
+      "face-4.svg",
+      "face-5.svg",
+      "face-6.svg",
+      "face-devil.svg"
     ]
   }
 }

@@ -34,5 +34,8 @@
   "UnbalancedDie": { "fill": "#FFF5E6", "border": "#C67A1F", "pip": "#734000", "icon": "scales" },
   "UnluckyDie": { "fill": "#D7D7D7", "border": "#555555", "pip": "#222222", "icon": "skull" },
   "CharioteerDie": { "fill": "#E8F2FF", "border": "#4A7CC9", "pip": "#21407A", "icon": "horse" },
-  "WeightedDie": { "fill": "#D9D0B5", "border": "#6A4A00", "pip": "#3A2500", "icon": "weight" }
+  "WeightedDie": { "fill": "#D9D0B5", "border": "#6A4A00", "pip": "#3A2500", "icon": "weight" },
+  "FriarDie": { "fill": "#F5EDD8", "border": "#8B7355", "pip": "#4A3828", "icon": "cross" },
+  "PearlDie": { "fill": "#FFE8F0", "border": "#D87898", "pip": "#8A3050", "icon": "star" },
+  "TengriDie": { "fill": "#E8F4FF", "border": "#3498DB", "pip": "#1A5080", "icon": "wheel" }
 }

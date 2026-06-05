@@ -60,16 +60,31 @@ export function getFaceWeightVisuals(weights: readonly number[]): FaceWeightVisu
   });
 }
 
-/** 六面相对出率（整数百分比，总和约 100） */
+/** 格式化为图鉴用的一位小数百分比（与 docs/dice/骰子概率+描述.md 对齐） */
+export function formatFaceWeightPercent(weights: readonly number[], idx: number): string {
+  const w = weights[idx];
+  if (w == null || w <= 0) return '—';
+  const sum = weights.reduce((a, b) => a + b, 0);
+  if (sum <= 0) return '0%';
+  const p = Math.round((w / sum) * 1000) / 10;
+  return Number.isInteger(p) ? `${p}%` : `${p.toFixed(1)}%`;
+}
+
+/** 六面相对出率（整数百分比，最大余数法分配，总和 100） */
 export function getFaceWeightPercents(weights: readonly number[]): number[] {
   const sum = weights.reduce((a, b) => a + b, 0);
   if (sum <= 0) return weights.map(() => 0);
   const raw = weights.map((w) => (w / sum) * 100);
-  const rounded = raw.map((p) => Math.round(p));
-  const drift = 100 - rounded.reduce((a, b) => a + b, 0);
-  if (drift !== 0) {
-    const maxIdx = raw.reduce((best, p, i) => (p > raw[best]! ? i : best), 0);
-    rounded[maxIdx] = (rounded[maxIdx] ?? 0) + drift;
+  const floors = raw.map((p) => Math.floor(p));
+  let remaining = 100 - floors.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((p, i) => ({ i, frac: p - Math.floor(p) }))
+    .sort((a, b) => b.frac - a.frac || a.i - b.i);
+  const result = [...floors];
+  for (let k = 0; k < remaining; k++) {
+    const idx = order[k]?.i;
+    if (idx === undefined) break;
+    result[idx] = (result[idx] ?? 0) + 1;
   }
-  return rounded;
+  return result;
 }

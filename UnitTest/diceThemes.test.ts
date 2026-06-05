@@ -16,7 +16,15 @@ describe('diceThemes', () => {
     expect(getDiceTheme('DevilDie').icon).toBe('devil');
   });
 
-  it('RollThreeDie uses number3 icon', () => {
-    expect(getDiceTheme('RollThreeDie').icon).toBe('number3');
+  it('TengriDie uses wheel icon', () => {
+    expect(getDiceTheme('TengriDie').icon).toBe('wheel');
+  });
+
+  it('PearlDie uses star icon', () => {
+    expect(getDiceTheme('PearlDie').icon).toBe('star');
+  });
+
+  it('FriarDie uses cross icon', () => {
+    expect(getDiceTheme('FriarDie').icon).toBe('cross');
   });
 });

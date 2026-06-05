@@ -313,7 +313,7 @@ describe('weightedRoll 单元测试', () => {
   });
 });
 
-describe('StAntiochDie（圣安提阿克斯）权重 [3,1,6,1,1,3]', () => {
+describe('StAntiochDie（圣安提阿克斯）权重 [200,67,400,67,67,200]', () => {
   it('500 次掷骰中 3 为最高频', () => {
     const dice = createDice(['StAntiochDie']);
     const counts = new Map<number, number>();
