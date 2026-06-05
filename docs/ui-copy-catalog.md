@@ -19,7 +19,7 @@
 | `hot_dice`（若仍触发遮罩） | 全部得分 | 六枚得分，再来一轮 | 约 3s 自动消失 |
 | `turn_end`（轮到你，无快照） | 轮到你了 | 该你掷骰了 | — |
 | `turn_end`（对手收分，有 `lastTurnEnd`） | 对手收分 | `{name} 本回合 +{earned}` | 展示收分保留骰 |
-| `turn_end`（己方收分，有 `lastTurnEnd`） | 收分成功 | `+{earned} 分已入账` | 展示收分保留骰 |
+| `turn_end`（己方收分，有 `lastTurnEnd`） | 收分成功 | `+{earned} 分已累计` | 展示收分保留骰 |
 | `turn_end`（对手计分并跳过，旧逻辑兜底） | 计分成功 | `等待 {opponentName} 掷骰` | — |
 | `game_over`（你赢） | 你赢了！ | 恭喜计分达标 | **离开房间** / **再来一局**（房主） |
 | `game_over`（你输） | 胜局已定 | `{winnerName} 赢了` 或 `对局结束` | 同上 |

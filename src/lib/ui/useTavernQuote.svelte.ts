@@ -53,6 +53,7 @@ export function createGameQuoteController() {
   let lastBigScorePreview = false;
   let prevPhase: string | null = null;
   let lastBustQuoteKey = '';
+  let shownGameOverQuote = false;
 
   function show(trigger: QuoteTrigger): void {
     const picked = pickTavernQuote(trigger);
@@ -77,6 +78,7 @@ export function createGameQuoteController() {
     lastBigScorePreview = false;
     prevPhase = null;
     lastBustQuoteKey = '';
+    shownGameOverQuote = false;
     quote = null;
   }
 
@@ -134,8 +136,12 @@ export function createGameQuoteController() {
     }
     lastBustQuoteKey = '';
     if (phase === 'game_over') {
+      if (shownGameOverQuote) return;
+      shownGameOverQuote = true;
       show(isWinner ? 'win' : 'lose');
+      return;
     }
+    shownGameOverQuote = false;
   }
 
   return {

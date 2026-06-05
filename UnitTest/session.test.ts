@@ -462,6 +462,32 @@ describe('handleSelectDice', () => {
 });
 
 describe('lastTurnEnd', () => {
+  it('banks directly to game_over when target score is reached', () => {
+    let state = readyToPlay();
+    state = {
+      ...state,
+      phase: 'selecting',
+      rollCount: 1,
+      awaitingKeep: true,
+      turnScore: 500,
+      players: [
+        { ...state.players[0], totalScore: 3600, turnScore: 0 },
+        { ...state.players[1], totalScore: 1200, turnScore: 0 },
+      ],
+      dice: diceWithValues([1, 2, 3, 4, 5, 6]).map((d, i) => ({ ...d, kept: i === 0 })),
+    };
+    const result = handleBank(state, 'host');
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.phase).toBe('game_over');
+    expect(result.winner).toBe('host');
+    expect(result.lastTurnEnd).toEqual({
+      by: 'host',
+      earned: 500,
+      dice: [expect.objectContaining({ id: 0, value: 1, kept: true })],
+    });
+  });
+
   it('snapshots kept dice when banking', () => {
     let state = readyToPlay();
     state = {

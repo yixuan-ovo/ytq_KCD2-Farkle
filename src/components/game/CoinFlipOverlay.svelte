@@ -85,7 +85,7 @@
   .coin-overlay {
     position: fixed;
     inset: 0;
-    z-index: 210;
+    z-index: 1700;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -408,7 +408,11 @@ export function handleBank(
       winner: players[idx].id,
       lastBust: null,
       pendingSelection: [],
-      lastTurnEnd: null,
+      lastTurnEnd: {
+        by: bankingBy,
+        earned,
+        dice: keptSnapshot,
+      },
     };
   }
 

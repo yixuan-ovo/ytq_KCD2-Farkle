@@ -7,6 +7,7 @@
   import DiceBoard from '../components/game/DiceBoard.svelte';
   import TurnScoreCard from '../components/game/TurnScoreCard.svelte';
   import PhaseOverlay from '../components/game/PhaseOverlay.svelte';
+  import PartnerLeftOverlay from '../components/game/PartnerLeftOverlay.svelte';
   import CoinFlipOverlay from '../components/game/CoinFlipOverlay.svelte';
   import FloatingScore from '../components/game/FloatingScore.svelte';
   import ComboBanner from '../components/game/ComboBanner.svelte';
@@ -21,11 +22,11 @@
   import type { DieFace } from '$lib/game/types';
   import TavernQuoteBar from '../components/layout/TavernQuoteBar.svelte';
   import { createGameQuoteController } from '$lib/ui/useTavernQuote.svelte';
+  import type { PartnerLeftNotice } from '$lib/client/gameSession.svelte';
   import {
     session,
     connect,
     startGame,
-    restartGame,
     ackTurnOrder,
     roll,
     keepSelection,
@@ -100,6 +101,11 @@
     const phase = session.state?.phase;
     if (phase === 'turn_end' || phase === 'bust' || phase === 'game_over') {
       prevTurnScore = 0;
+    }
+    if (phase === 'game_over') {
+      comboVisible = false;
+      floatShow = false;
+      physicsRolling = false;
     }
   });
 
@@ -221,6 +227,15 @@
     return player?.name ?? '';
   });
 
+  let yourName = $derived(
+    session.state?.players.find((p) => p.id === session.you)?.name ?? '',
+  );
+  let yourScore = $derived(session.state?.players.find((p) => p.id === session.you)?.totalScore ?? 0);
+  let opponentScore = $derived(
+    session.state?.players.find((p) => p.id !== session.you)?.totalScore ?? 0,
+  );
+  let targetScore = $derived(session.state?.config.targetScore ?? 4000);
+
   let firstPlayerName = $derived.by(() => {
     const flip = session.state?.coinFlip;
     if (!flip || !session.state) return '';
@@ -259,6 +274,10 @@
       return;
     }
     gameQuotes.onGameEnter();
+  });
+
+  $effect(() => {
+    if (!showDice) return;
     const phase = session.state?.phase;
     const rollCount = session.state?.rollCount ?? 0;
     gameQuotes.handlePhaseChange(phase, rollCount);
@@ -299,6 +318,12 @@
       setTimeout(() => (copiedCode = false), 2000);
     } catch {
       /* clipboard denied */
+    }
+  }
+
+  function handlePartnerLeftDismiss(notice: PartnerLeftNotice): void {
+    if (notice.hostLeft && !notice.youAreHost) {
+      onLeave?.();
     }
   }
 
@@ -440,25 +465,6 @@
         <div class="game-page__spacer"></div>
       {/if}
 
-      <div class="game-page__toast-slot">
-        <PhaseOverlay
-          phase={session.state?.phase ?? null}
-          rollCount={session.state?.rollCount ?? 0}
-          {winnerName}
-          {isMyTurn}
-          {isWinner}
-          {opponentName}
-          {bustPlayerName}
-          lastBust={session.state?.lastBust ?? null}
-          lastTurnEnd={session.state?.lastTurnEnd ?? null}
-          {turnEndPlayerName}
-          you={session.you}
-          {canRestart}
-          onLeave={() => onLeave?.()}
-          onRestart={restartGame}
-        />
-      </div>
-
       <ActionBar
         {inLobby}
         {inDiceSelection}
@@ -479,6 +485,29 @@
         onBank={bank}
       />
     </main>
+
+    <PartnerLeftOverlay onDismiss={handlePartnerLeftDismiss} />
+
+    <PhaseOverlay
+      phase={session.state?.phase ?? null}
+      rollCount={session.state?.rollCount ?? 0}
+      {winnerName}
+      {isMyTurn}
+      {isWinner}
+      {opponentName}
+      {bustPlayerName}
+      lastBust={session.state?.lastBust ?? null}
+      lastTurnEnd={session.state?.lastTurnEnd ?? null}
+      {turnEndPlayerName}
+      you={session.you}
+      winner={session.state?.winner ?? null}
+      {yourName}
+      {yourScore}
+      {opponentScore}
+      {targetScore}
+      {canRestart}
+      {onLeave}
+    />
 
     <CoinFlipOverlay
       coinFlip={inTurnOrder ? (session.state?.coinFlip ?? null) : null}
@@ -570,15 +599,6 @@
     min-height: 0;
     gap: 0;
     padding-top: var(--space-1);
-  }
-
-  .game-page__toast-slot {
-    flex: none;
-    width: 100%;
-    max-width: min(640px, 100%);
-    margin-inline: auto;
-    padding: 0 var(--space-2);
-    pointer-events: none;
   }
 
   @media (min-width: 768px) {
