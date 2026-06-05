@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getFaceTextureUrl } from '$lib/assets/diceTextures';
+  import { getPlaceholderFaceUrl } from '$lib/assets/diceTextures';
   import { prefersReducedMotion } from '$lib/ui/animation';
-  import type { DieFace } from '$lib/game/types';
+  import type { DieType } from '$lib/game/types';
 
-  /** 深色酒馆烛光氛围 + 低对比 emoji + 悬浮骰 1–6 依次发光 */
+  /** 深色酒馆烛光氛围 + 低对比 emoji + 六枚特殊骰依次发光（隐藏面中心图标） */
 
   const GLYPHS = [
     { id: 'g1', glyph: '🎲', x: '9%', y: '14%', r: -14, drift: '20s' },
@@ -14,22 +14,23 @@
     { id: 'g5', glyph: '🎲', x: '52%', y: '88%', r: -32, drift: '21s' },
   ] as const;
 
+  /** 六枚配色与图标差异大的特殊骰，用于背景装饰 */
   const FLOAT_DICE: {
     id: string;
-    face: DieFace;
+    dieType: DieType;
     x: string;
     y: string;
     r: number;
     bobDelay: string;
   }[] = [
     /* 左侧：与按钮区中部齐平，三点略分散 */
-    { id: 'd1', face: 1, x: '5%', y: '38%', r: -11, bobDelay: '0s' },
-    { id: 'd2', face: 2, x: '17%', y: '46%', r: 8, bobDelay: '0.7s' },
-    { id: 'd3', face: 3, x: '7%', y: '56%', r: -6, bobDelay: '1.4s' },
+    { id: 'd1', dieType: 'ArankaDie', x: '5%', y: '38%', r: -11, bobDelay: '0s' },
+    { id: 'd2', dieType: 'DevilDie', x: '17%', y: '46%', r: 8, bobDelay: '0.7s' },
+    { id: 'd3', dieType: 'HolyTrinityDie', x: '7%', y: '56%', r: -6, bobDelay: '1.4s' },
     /* 右侧：偏下靠外，三点略分散 */
-    { id: 'd4', face: 4, x: '71%', y: '42%', r: 10, bobDelay: '0.35s' },
-    { id: 'd5', face: 5, x: '86%', y: '50%', r: -8, bobDelay: '1.05s' },
-    { id: 'd6', face: 6, x: '76%', y: '60%', r: 6, bobDelay: '1.75s' },
+    { id: 'd4', dieType: 'KingDie', x: '71%', y: '42%', r: 10, bobDelay: '0.35s' },
+    { id: 'd5', dieType: 'PieDie', x: '86%', y: '50%', r: -8, bobDelay: '1.05s' },
+    { id: 'd6', dieType: 'CharioteerDie', x: '76%', y: '60%', r: 6, bobDelay: '1.75s' },
   ];
 
   const GLOW_STEP_MS = 850;
@@ -78,7 +79,7 @@
         <span class="tavern-ambience__float-die-halo"></span>
         <img
           class="tavern-ambience__float-die-img"
-          src={getFaceTextureUrl(d.face)}
+          src={getPlaceholderFaceUrl(d.dieType)}
           alt=""
           width="64"
           height="64"
@@ -163,12 +164,6 @@
     rotate: var(--die-r);
     animation: dieBob 4.5s ease-in-out infinite;
     animation-delay: var(--bob-delay);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tavern-ambience__float-die {
-      animation: none;
-    }
   }
 
   .tavern-ambience__float-die-halo {
@@ -259,25 +254,6 @@
   @media (max-width: 640px) {
     .tavern-ambience__float-die {
       width: clamp(44px, 15vw, 56px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tavern-ambience__candle {
-      animation: none;
-      opacity: 0.94;
-    }
-
-    .tavern-ambience__glyph {
-      animation: none;
-    }
-
-    .tavern-ambience__float-die-img {
-      opacity: 0.5;
-    }
-
-    .tavern-ambience__float-die--lit .tavern-ambience__float-die-img {
-      opacity: 0.65;
     }
   }
 </style>

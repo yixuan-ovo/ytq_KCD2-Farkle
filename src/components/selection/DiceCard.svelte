@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DieDefinition } from '$lib/game/diceRegistry';
   import { CATEGORY_LABELS } from '$lib/game/diceRegistry';
-  import { getFaceWeightPercents, getFaceWeightVisuals } from '$lib/game/weightTiers';
+  import { formatFaceWeightPercent, getFaceWeightVisuals } from '$lib/game/weightTiers';
   import { getCatalogFaceUrl } from '$lib/assets/diceTextures';
   import type { DieFace } from '$lib/game/types';
 
@@ -22,7 +22,6 @@
   const faceValues = [1, 2, 3, 4, 5, 6] as const;
 
   let faceVisuals = $derived(getFaceWeightVisuals(die.weights));
-  let facePercents = $derived(getFaceWeightPercents(die.weights));
   let categoryLabel = $derived(CATEGORY_LABELS[die.category] ?? die.category);
 </script>
 
@@ -48,14 +47,14 @@
     {#each die.weights as w, i (i)}
       {@const face = faceValues[i] as DieFace}
       {@const visual = faceVisuals[i]}
-      {@const pct = facePercents[i]}
+      {@const pctLabel = formatFaceWeightPercent(die.weights, i)}
       <span
         class="dice-card__face dice-card__face--{visual}"
         title={visual === 'blocked'
           ? `点数 ${face}：无法掷出`
           : die.wildcardFace === face
-            ? `点数 ${face}：恶魔之首（百搭），约 ${pct}%`
-            : `点数 ${face}：约 ${pct}%`}
+            ? `点数 ${face}：恶魔之首（百搭），约 ${pctLabel}`
+            : `点数 ${face}：约 ${pctLabel}`}
       >
         <img
           class="dice-card__face-img"
@@ -67,7 +66,7 @@
           <span class="dice-card__scratch" aria-hidden="true"></span>
         {/if}
         <span class="dice-card__pct" class:dice-card__pct--blocked={visual === 'blocked'}>
-          {visual === 'blocked' ? '—' : `${pct}%`}
+          {pctLabel}
         </span>
       </span>
     {/each}

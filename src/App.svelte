@@ -12,14 +12,9 @@
     const savedName = loadPlayerName();
 
     // 邀请链接若带 ?name=（旧链或误拷），先进大厅让玩家确认/修改昵称，避免与房主同名
-    if (roomId && nameFromQuery) {
-      return { view: 'lobby', roomId, name: nameFromQuery };
-    }
-    if (roomId && savedName) {
-      return { view: 'game', roomId, name: savedName };
-    }
+    // 邀请链接一律先进大厅确认昵称，避免 localStorage 里存了旧昵称误连
     if (roomId) {
-      return { view: 'lobby', roomId, name: '' };
+      return { view: 'lobby', roomId, name: nameFromQuery || savedName || '' };
     }
     return { view: 'lobby', roomId: '', name: '' };
   }

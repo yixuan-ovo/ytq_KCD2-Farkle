@@ -22,19 +22,52 @@ export function createInitialState(): GameState {
     lastBust: null,
     pendingSelection: [],
     lastTurnEnd: null,
+    coinFlip: null,
+    awayUntil: {},
   };
+}
+
+/** 断线后保留对局的宽限时间 */
+export const AWAY_GRACE_MS = 2 * 60 * 1000;
+
+export function markPlayerAway(
+  state: GameState,
+  who: PlayerId,
+  now = Date.now(),
+): GameState {
+  return {
+    ...state,
+    awayUntil: { ...state.awayUntil, [who]: now + AWAY_GRACE_MS },
+  };
+}
+
+export function clearPlayerAway(state: GameState, who: PlayerId): GameState {
+  if (state.awayUntil[who] == null) return state;
+  const awayUntil = { ...state.awayUntil };
+  delete awayUntil[who];
+  return { ...state, awayUntil };
+}
+
+export function isPlayerAway(state: GameState, who: PlayerId, now = Date.now()): boolean {
+  const until = state.awayUntil[who];
+  return until != null && until > now;
 }
 
 export function joinPlayer(state: GameState, name: string): { state: GameState; role: PlayerId } | { error: string } {
   const trimmed = name.trim().slice(0, 24);
   if (!trimmed) return { error: '昵称不能为空' };
 
-  const hostMatch = state.players[0].name === trimmed;
-  const guestMatch = state.players[1].name === trimmed;
-  if (hostMatch) return { role: 'host', state };
-  if (guestMatch) return { role: 'guest', state };
+  const hostName = state.players[0].name;
+  const guestName = state.players[1].name;
 
-  if (!state.players[0].name) {
+  if (hostName && trimmed === hostName) {
+    return { error: '与房主昵称相同，请换一个' };
+  }
+  if (guestName && trimmed === guestName) {
+    return { error: '该昵称已被使用，请换一个' };
+  }
+
+  if (!hostName) {
     return {
       role: 'host',
       state: {
@@ -44,7 +77,7 @@ export function joinPlayer(state: GameState, name: string): { state: GameState; 
     };
   }
 
-  if (!state.players[1].name) {
+  if (!guestName) {
     return {
       role: 'guest',
       state: {
@@ -94,30 +127,53 @@ export function startGame(
     rollCount: 0,
     awaitingKeep: false,
     winner: null,
-    currentPlayerIndex: 0 as const,
     hostDice: [] as string[],
     guestDice: [] as string[],
     lastBust: null,
     pendingSelection: [],
     lastTurnEnd: null,
+    coinFlip: null,
+    awayUntil: {},
     players: [
       { ...state.players[0], totalScore: 0, turnScore: 0 },
       { ...state.players[1], totalScore: 0, turnScore: 0 },
     ] as GameState['players'],
   };
 
-  if (mergedConfig.specialDiceCount > 0) {
-    return {
-      ...base,
-      phase: 'dice_selection',
-      dice: createDice([]),
-    };
+  const firstIndex = (randomSeed() % 2) as 0 | 1;
+  const firstPlayer = state.players[firstIndex].id;
+  const heads = randomSeed() % 2 === 0;
+
+  return {
+    ...base,
+    phase: 'turn_order',
+    currentPlayerIndex: firstIndex,
+    coinFlip: { firstPlayer, heads },
+    dice: createDice([]),
+  };
+}
+
+export function finishTurnOrder(
+  state: GameState,
+  by: PlayerId,
+): GameState | { error: string } {
+  if (by !== 'host') return { error: '仅房主可推进' };
+  if (state.phase !== 'turn_order') return state;
+
+  const firstPlayer = state.players[state.currentPlayerIndex].id;
+  const base: GameState = { ...state, coinFlip: null };
+
+  if (state.config.specialDiceCount > 0) {
+    return { ...base, phase: 'dice_selection', dice: createDice([]) };
   }
 
   return {
     ...base,
     phase: 'selecting',
-    dice: createDice([]),
+    dice: buildDiceForPlayer(base, firstPlayer),
+    turnScore: 0,
+    rollCount: 0,
+    awaitingKeep: false,
   };
 }
 
@@ -147,11 +203,11 @@ export function submitDicePick(
   };
 
   if (next.hostDice.length >= n && next.guestDice.length >= n) {
+    const firstPlayer = next.players[next.currentPlayerIndex].id;
     return {
       ...next,
       phase: 'selecting',
-      currentPlayerIndex: 0,
-      dice: buildDiceForPlayer(next, 'host'),
+      dice: buildDiceForPlayer(next, firstPlayer),
       turnScore: 0,
       rollCount: 0,
       awaitingKeep: false,
@@ -175,7 +231,7 @@ function clearEphemeral(state: GameState): GameState {
   return { ...state, pendingSelection: [], lastTurnEnd: null, lastBust: null };
 }
 
-function endTurn(state: GameState, busted: boolean): GameState {
+function endTurn(state: GameState): GameState {
   const idx = state.currentPlayerIndex;
   const bustedBy = currentPlayerId(state);
   const players = [...state.players] as GameState['players'];
@@ -185,7 +241,7 @@ function endTurn(state: GameState, busted: boolean): GameState {
   const nextPlayerId = players[nextIndex].id;
   return {
     ...state,
-    phase: busted ? 'bust' : 'turn_end',
+    phase: 'selecting',
     players,
     currentPlayerIndex: nextIndex,
     dice: buildDiceForPlayer(state, nextPlayerId),
@@ -194,18 +250,16 @@ function endTurn(state: GameState, busted: boolean): GameState {
     awaitingKeep: false,
     pendingSelection: [],
     lastTurnEnd: null,
-    lastBust: busted
-      ? {
-          by: bustedBy,
-          dice: state.dice.filter((d) => d.active && !d.kept).map((d) => ({ ...d })),
-        }
-      : null,
+    lastBust: {
+      by: bustedBy,
+      dice: state.dice.filter((d) => d.active && !d.kept).map((d) => ({ ...d })),
+    },
   };
 }
 
 function afterRoll(state: GameState): GameState {
   if (isBust(state.dice)) {
-    return endTurn(state, true);
+    return endTurn(state);
   }
   return { ...state, phase: 'selecting' };
 }
@@ -224,11 +278,15 @@ function rollUnkeptDice(state: GameState): GameState {
 
 export function handleRoll(state: GameState, by: PlayerId): GameState | { error: string } {
   if (currentPlayerId(state) !== by) return { error: '还没轮到你' };
-  if (state.phase !== 'selecting' && state.phase !== 'bust' && state.phase !== 'turn_end' && state.phase !== 'hot_dice') {
+  state = normalizeTurnPhase(state);
+  if (state.phase !== 'selecting' && state.phase !== 'turn_end' && state.phase !== 'hot_dice') {
     return { error: '当前不能掷骰' };
   }
-  if (state.phase === 'bust' || state.phase === 'turn_end' || state.phase === 'hot_dice') {
-    return clearEphemeral({ ...state, phase: 'selecting' });
+  if (state.phase === 'turn_end' || state.phase === 'hot_dice') {
+    state = clearEphemeral({ ...state, phase: 'selecting' });
+  }
+  if (state.rollCount === 0 && state.lastBust) {
+    state = clearEphemeral(state);
   }
 
   if (state.awaitingKeep) return { error: '请先选择要保留的骰子' };
@@ -408,5 +466,7 @@ export function leavePlayer(state: GameState, who: PlayerId): GameState {
     lastBust: null,
     pendingSelection: [],
     lastTurnEnd: null,
+    coinFlip: null,
+    awayUntil: {},
   };
 }

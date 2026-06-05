@@ -1,30 +1,50 @@
 import { describe, expect, it } from 'vitest';
 import type { Die, GameState } from '../src/lib/game/types';
 import {
+  clearPlayerAway,
   createInitialState,
+  finishTurnOrder,
   handleBank,
   handleKeep,
   handleRoll,
   handleSelectDice,
+  isPlayerAway,
+  joinPlayer,
   leavePlayer,
+  markPlayerAway,
   startGame,
   submitDicePick,
+  AWAY_GRACE_MS,
 } from '../worker/src/session';
 import { toClientGameState } from '../src/lib/protocol/messages';
 
+function lobbyWithBothPlayers(): GameState {
+  const state = createInitialState();
+  return {
+    ...state,
+    players: [
+      { ...state.players[0], name: 'A' },
+      { ...state.players[1], name: 'B' },
+    ],
+  };
+}
+
+/** 测试用：金币定先后后强制房主先手，避免随机先后影响断言 */
+function startGameHostFirst(
+  state: GameState,
+  config?: Parameters<typeof startGame>[2],
+): GameState {
+  let started = startGame(state, 'host', config) as GameState;
+  started = {
+    ...started,
+    currentPlayerIndex: 0,
+    coinFlip: { firstPlayer: 'host', heads: true },
+  };
+  return finishTurnOrder(started, 'host') as GameState;
+}
+
 function readyToPlay(): GameState {
-  let state = createInitialState();
-  state = startGame(
-    {
-      ...state,
-      players: [
-        { ...state.players[0], name: 'A' },
-        { ...state.players[1], name: 'B' },
-      ],
-    },
-    'host',
-  ) as GameState;
-  return state;
+  return startGameHostFirst(lobbyWithBothPlayers());
 }
 
 function diceWithValues(values: number[]): Die[] {
@@ -43,17 +63,25 @@ describe('handleRoll awaitingKeep', () => {
     const result = handleRoll(state, 'host');
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(result.rollCount).toBe(1);
-    if (result.phase === 'selecting') {
-      expect(result.awaitingKeep).toBe(true);
+    if (result.lastBust) {
+      expect(result.phase).toBe('selecting');
+      expect(result.rollCount).toBe(0);
     } else {
-      expect(result.phase).toBe('bust');
+      expect(result.rollCount).toBe(1);
+      expect(result.phase).toBe('selecting');
+      expect(result.awaitingKeep).toBe(true);
     }
   });
 
   it('blocks second roll before keep', () => {
     let state = readyToPlay();
-    state = handleRoll(state, 'host') as GameState;
+    state = {
+      ...state,
+      dice: diceWithValues([1, 2, 3, 4, 5, 6]),
+      phase: 'selecting',
+      rollCount: 1,
+      awaitingKeep: true,
+    };
     const again = handleRoll(state, 'host');
     expect(again).toEqual({ error: '请先选择要保留的骰子' });
   });
@@ -72,11 +100,14 @@ describe('handleRoll awaitingKeep', () => {
     if ('error' in result) return;
     expect(result.dice[0]?.kept).toBe(true);
     expect(result.turnScore).toBe(100);
-    if (result.phase === 'selecting') {
+    if (result.lastBust) {
+      expect(result.phase).toBe('selecting');
+      expect(result.rollCount).toBe(0);
+      expect(result.lastBust.by).toBe('host');
+      expect(result.currentPlayerIndex).toBe(1);
+    } else if (result.phase === 'selecting') {
       expect(result.rollCount).toBe(2);
       expect(result.awaitingKeep).toBe(true);
-    } else {
-      expect(result.phase).toBe('bust');
     }
   });
 
@@ -108,7 +139,7 @@ describe('handleKeep', () => {
       expect(result.rollCount).toBeGreaterThanOrEqual(2);
       expect(result.awaitingKeep).toBe(true);
     } else {
-      expect(['bust', 'turn_end']).toContain(result.phase);
+      expect(result.lastBust).not.toBeNull();
     }
   });
 
@@ -122,8 +153,8 @@ describe('handleKeep', () => {
       awaitingKeep: true,
     };
     state = handleKeep(state, 'host', [0]) as GameState;
-    if (state.phase !== 'selecting') {
-      expect(['bust', 'turn_end']).toContain(state.phase);
+    if (state.lastBust) {
+      expect(state.phase).toBe('selecting');
       return;
     }
     expect(state.turnScore).toBe(100);
@@ -150,7 +181,7 @@ describe('handleKeep', () => {
       expect(result.awaitingKeep).toBe(true);
       expect(result.rollCount).toBeGreaterThanOrEqual(3);
     } else {
-      expect(['bust', 'turn_end']).toContain(result.phase);
+      expect(result.lastBust).not.toBeNull();
     }
   });
 
@@ -209,10 +240,12 @@ describe('startGame restart', () => {
     const result = startGame(state, 'host');
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(result.phase).toBe('selecting');
-    expect(result.winner).toBeNull();
-    expect(result.players[0]?.totalScore).toBe(0);
-    expect(result.players[1]?.totalScore).toBe(0);
+    expect(result.phase).toBe('turn_order');
+    const playing = finishTurnOrder(result, 'host') as GameState;
+    expect(playing.phase).toBe('selecting');
+    expect(playing.winner).toBeNull();
+    expect(playing.players[0]?.totalScore).toBe(0);
+    expect(playing.players[1]?.totalScore).toBe(0);
   });
 
   it('rejects restart while game in progress', () => {
@@ -233,48 +266,53 @@ describe('startGame restart', () => {
 });
 
 describe('startGame with config', () => {
-  function lobbyReady() {
-    return {
-      ...createInitialState(),
-      players: [
-        { ...createInitialState().players[0], name: 'A' },
-        { ...createInitialState().players[1], name: 'B' },
-      ],
-    } as GameState;
-  }
-
-  it('enters dice_selection when specialDiceCount > 0', () => {
-    const result = startGame(lobbyReady(), 'host', { specialDiceCount: 2, targetScore: 4000 });
+  it('enters turn_order then dice_selection when specialDiceCount > 0', () => {
+    const result = startGame(lobbyWithBothPlayers(), 'host', { specialDiceCount: 2, targetScore: 4000 });
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(result.phase).toBe('dice_selection');
-    expect(result.config.specialDiceCount).toBe(2);
-    expect(result.hostDice).toEqual([]);
+    expect(result.phase).toBe('turn_order');
+    expect(result.coinFlip?.firstPlayer).toMatch(/^(host|guest)$/);
+    const next = finishTurnOrder(result, 'host') as GameState;
+    expect(next.phase).toBe('dice_selection');
+    expect(next.config.specialDiceCount).toBe(2);
+    expect(next.hostDice).toEqual([]);
   });
 
-  it('skips dice_selection when specialDiceCount is 0', () => {
-    const result = startGame(lobbyReady(), 'host', { specialDiceCount: 0, targetScore: 3000 });
+  it('enters turn_order then selecting when specialDiceCount is 0', () => {
+    const result = startGame(lobbyWithBothPlayers(), 'host', { specialDiceCount: 0, targetScore: 3000 });
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(result.phase).toBe('selecting');
-    expect(result.config.targetScore).toBe(3000);
+    expect(result.phase).toBe('turn_order');
+    const next = finishTurnOrder(result, 'host') as GameState;
+    expect(next.phase).toBe('selecting');
+    expect(next.config.targetScore).toBe(3000);
+    expect(next.coinFlip).toBeNull();
+  });
+});
+
+describe('turn order coin flip', () => {
+  it('randomizes first player on start', () => {
+    const result = startGame(lobbyWithBothPlayers(), 'host') as GameState;
+    expect(result.phase).toBe('turn_order');
+    expect(result.coinFlip).not.toBeNull();
+    expect(result.coinFlip!.firstPlayer).toBe(result.players[result.currentPlayerIndex].id);
+  });
+
+  it('only host can finish turn order', () => {
+    const started = startGame(lobbyWithBothPlayers(), 'host') as GameState;
+    expect(finishTurnOrder(started, 'guest')).toEqual({ error: '仅房主可推进' });
+  });
+
+  it('is idempotent after leaving turn_order', () => {
+    const started = startGame(lobbyWithBothPlayers(), 'host') as GameState;
+    const playing = finishTurnOrder(started, 'host') as GameState;
+    expect(finishTurnOrder(playing, 'host')).toBe(playing);
   });
 });
 
 describe('submitDicePick', () => {
   function inDiceSelection(): GameState {
-    const base = startGame(
-      {
-        ...createInitialState(),
-        players: [
-          { ...createInitialState().players[0], name: 'A' },
-          { ...createInitialState().players[1], name: 'B' },
-        ],
-      },
-      'host',
-      { specialDiceCount: 2 },
-    ) as GameState;
-    return base;
+    return startGameHostFirst(lobbyWithBothPlayers(), { specialDiceCount: 2 });
   }
 
   it('starts game when both players pick', () => {
@@ -283,6 +321,7 @@ describe('submitDicePick', () => {
     expect(state.phase).toBe('dice_selection');
     state = submitDicePick(state, 'guest', ['DevilDie', 'OddDie']) as GameState;
     expect(state.phase).toBe('selecting');
+    expect(state.currentPlayerIndex).toBe(0);
     expect(state.hostDice).toEqual(['ArankaDie', 'LuckyDie1']);
     expect(state.guestDice).toEqual(['DevilDie', 'OddDie']);
     expect(state.dice.some((d) => d.type === 'ArankaDie')).toBe(true);
@@ -365,7 +404,7 @@ describe('lastBust', () => {
     let state = readyToPlay();
     state = {
       ...state,
-      phase: 'bust',
+      phase: 'selecting',
       currentPlayerIndex: 0,
       rollCount: 0,
       lastBust: { by: 'guest', dice: diceWithValues([2, 3, 4, 5, 6, 3]) },
@@ -461,5 +500,72 @@ describe('lastTurnEnd', () => {
     expect('error' in next).toBe(false);
     if ('error' in next) return;
     expect(next.lastTurnEnd).toBeNull();
+  });
+});
+
+describe('joinPlayer', () => {
+  it('first joiner becomes host', () => {
+    const result = joinPlayer(createInitialState(), 'Alice');
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.role).toBe('host');
+    expect(result.state.players[0].name).toBe('Alice');
+  });
+
+  it('second joiner becomes guest', () => {
+    let state = createInitialState();
+    state = (joinPlayer(state, 'Alice') as { state: GameState }).state;
+    const result = joinPlayer(state, 'Bob');
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.role).toBe('guest');
+    expect(result.state.players[1].name).toBe('Bob');
+  });
+
+  it('rejects guest name matching host', () => {
+    let state = createInitialState();
+    state = (joinPlayer(state, 'Alice') as { state: GameState }).state;
+    const result = joinPlayer(state, 'Alice');
+    expect('error' in result).toBe(true);
+    if (!('error' in result)) return;
+    expect(result.error).toContain('房主');
+  });
+
+  it('rejects duplicate guest name', () => {
+    let state = createInitialState();
+    state = (joinPlayer(state, 'Alice') as { state: GameState }).state;
+    state = (joinPlayer(state, 'Bob') as { state: GameState }).state;
+    const result = joinPlayer(state, 'Bob');
+    expect('error' in result).toBe(true);
+  });
+});
+
+describe('away grace', () => {
+  it('markPlayerAway sets deadline', () => {
+    const now = 1_000_000;
+    const next = markPlayerAway(createInitialState(), 'host', now);
+    expect(next.awayUntil.host).toBe(now + AWAY_GRACE_MS);
+  });
+
+  it('clearPlayerAway removes entry', () => {
+    let state = markPlayerAway(createInitialState(), 'guest');
+    state = clearPlayerAway(state, 'guest');
+    expect(state.awayUntil.guest).toBeUndefined();
+  });
+
+  it('isPlayerAway respects deadline', () => {
+    const now = 5_000;
+    const state = markPlayerAway(createInitialState(), 'host', now);
+    expect(isPlayerAway(state, 'host', now + 1)).toBe(true);
+    expect(isPlayerAway(state, 'host', now + AWAY_GRACE_MS)).toBe(false);
+  });
+
+  it('toClientGameState exposes opponentAway while in grace', () => {
+    const now = Date.now();
+    let state = lobbyWithBothPlayers();
+    state = markPlayerAway(state, 'guest', now);
+    const client = toClientGameState(state, 'host');
+    expect(client.opponentAway).toBe(true);
+    expect(client.opponentAwayUntil).toBe(now + AWAY_GRACE_MS);
   });
 });

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { generateRoomId } from '$lib/client/config';
+  import { joinRoom } from '$lib/client/gameSession.svelte';
 
   type Tab = 'create' | 'join';
 
@@ -72,8 +73,14 @@
     }
 
     submitting = true;
-    onEnter?.(id, name.trim());
-    submitting = false;
+    try {
+      await joinRoom(id, name.trim());
+      onEnter?.(id, name.trim());
+    } catch (err) {
+      localError = err instanceof Error ? err.message : '无法加入房间';
+    } finally {
+      submitting = false;
+    }
   }
 </script>
 
@@ -119,6 +126,9 @@
         bind:value={name}
         autocomplete="nickname"
       />
+      {#if joinOnly}
+        <p class="tavern-card__name-hint">昵称不可与房主相同，否则无法入座。</p>
+      {/if}
     </div>
 
     {#if tab === 'join' || joinOnly}
@@ -246,6 +256,13 @@
     padding: var(--space-2) var(--space-3);
     background: var(--color-canvas-alt);
     border-radius: 8px;
+  }
+
+  .tavern-card__name-hint {
+    margin-top: var(--space-1);
+    font-size: 0.75rem;
+    color: var(--color-text-on-dark-soft);
+    line-height: 1.45;
   }
 
   .tavern-card__error {

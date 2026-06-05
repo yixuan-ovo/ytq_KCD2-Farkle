@@ -7,10 +7,13 @@
     turnScore?: number;
     inLobby?: boolean;
     inDiceSelection?: boolean;
+    inTurnOrder?: boolean;
     lobbyWaitText?: string;
     dicePickWaitText?: string;
     opponentWaitName?: string;
     opponentSelecting?: boolean;
+    opponentAway?: boolean;
+    keepPending?: boolean;
     onRoll?: () => void;
     onKeep?: () => void;
     onBank?: () => void;
@@ -24,10 +27,13 @@
     turnScore = 0,
     inLobby = false,
     inDiceSelection = false,
+    inTurnOrder = false,
     lobbyWaitText = '',
     dicePickWaitText = '',
     opponentWaitName = '对手',
     opponentSelecting = false,
+    opponentAway = false,
+    keepPending = false,
     onRoll,
     onKeep,
     onBank,
@@ -37,7 +43,9 @@
 </script>
 
 <footer class="action-bar">
-  {#if inDiceSelection}
+  {#if inTurnOrder}
+    <p class="action-bar__wait">金币一掷定先后…</p>
+  {:else if inDiceSelection}
     {#if dicePickWaitText}
       <p class="action-bar__wait">{dicePickWaitText}</p>
     {/if}
@@ -45,6 +53,13 @@
     {#if lobbyWaitText}
       <p class="action-bar__wait">{lobbyWaitText}</p>
     {/if}
+  {:else if keepPending}
+    <p class="action-bar__wait" role="status">续掷判定中…</p>
+  {:else if !isMyTurn && opponentAway}
+    <p class="action-bar__wait action-bar__wait--opponent">
+      <span class="action-bar__hourglass" aria-hidden="true">⏳</span>
+      <strong class="action-bar__opponent-name">{opponentWaitName}</strong> 暂离中，2 分钟内可重连…
+    </p>
   {:else if !isMyTurn}
     <p class="action-bar__wait action-bar__wait--opponent">
       <span class="action-bar__hourglass" aria-hidden="true">⏳</span>
@@ -85,7 +100,7 @@
     border-top: 1px solid rgba(201, 168, 106, 0.25);
     padding: var(--space-3) var(--layout-gutter);
     padding-bottom: calc(var(--space-3) + var(--safe-bottom));
-    z-index: 100;
+    z-index: 120;
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
     min-height: calc(var(--action-bar-height) + var(--safe-bottom));
   }
@@ -208,12 +223,6 @@
 
     .action-bar__buttons .btn {
       font-size: 0.9375rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .action-bar__hourglass {
-      animation: none;
     }
   }
 </style>

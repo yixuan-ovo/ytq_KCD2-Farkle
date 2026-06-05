@@ -172,27 +172,30 @@
   .dice-board {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
     width: 100%;
   }
 
   .dice-board__kept {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2);
+    padding: var(--space-1) var(--space-2);
     background: rgba(0, 0, 0, 0.18);
     border-radius: var(--radius-die);
   }
 
   .dice-board__kept-label {
-    font-size: 0.75rem;
+    flex: none;
+    font-size: 0.6875rem;
     font-weight: 600;
     color: var(--color-gold);
     text-align: center;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     font-family: var(--font-serif);
+    writing-mode: vertical-rl;
   }
 
   .dice-board__kept-row {
@@ -216,7 +219,7 @@
 
   .dice-board__active-wrap {
     position: relative;
-    min-height: calc(var(--die-size) * 2 + var(--die-gap) + var(--space-4) + 1rem);
+    min-height: calc(var(--die-size) * 2 + var(--die-gap) * 3 + var(--space-2));
     display: flex;
     justify-content: center;
     width: 100%;
@@ -261,18 +264,52 @@
   .dice-board__active {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--die-gap);
+    column-gap: var(--die-gap);
+    row-gap: calc(var(--die-gap) + 0.625rem);
     justify-items: center;
     align-content: center;
     width: 100%;
     max-width: 100%;
-    min-height: calc(var(--die-size) * 2 + var(--die-gap));
-    padding: var(--space-3) var(--space-2);
+    min-height: calc(var(--die-size) * 2 + var(--die-gap) * 2);
+    padding: var(--space-2) var(--space-1);
     margin-inline: auto;
     transition: filter var(--duration-normal) var(--ease-out);
   }
 
+  .dice-board__die-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    min-width: 0;
+    padding-bottom: 2px;
+  }
+
   @media (min-width: 768px) {
+    .dice-board {
+      gap: var(--space-3);
+    }
+
+    .dice-board__kept {
+      flex-direction: column;
+      padding: var(--space-2);
+    }
+
+    .dice-board__kept-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      writing-mode: horizontal-tb;
+    }
+
+    .dice-board__active {
+      row-gap: var(--die-gap);
+      padding: var(--space-3) var(--space-2);
+    }
+
+    .dice-board__die-slot {
+      gap: 0.25rem;
+      padding-bottom: 0;
+    }
     .dice-board__active-wrap {
       min-height: calc(var(--die-size) + var(--space-4) + 1.25rem);
     }
@@ -290,14 +327,6 @@
 
   .dice-board__active--rolling {
     filter: blur(0.4px);
-  }
-
-  .dice-board__die-slot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-    min-width: 0;
   }
 
   .dice-board__label {
@@ -339,15 +368,6 @@
     50% {
       opacity: 1;
       transform: scale(1.02);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .dice-board__empty--hot {
-      animation: none;
-    }
-    .dice-board__active--rolling {
-      filter: none;
     }
   }
 </style>

@@ -117,10 +117,4 @@
       transform: translate(var(--spark-x), var(--spark-y)) scale(0.15);
     }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .combo-banner__spark {
-      display: none;
-    }
-  }
 </style>

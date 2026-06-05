@@ -7,6 +7,7 @@
   import DiceBoard from '../components/game/DiceBoard.svelte';
   import TurnScoreCard from '../components/game/TurnScoreCard.svelte';
   import PhaseOverlay from '../components/game/PhaseOverlay.svelte';
+  import CoinFlipOverlay from '../components/game/CoinFlipOverlay.svelte';
   import FloatingScore from '../components/game/FloatingScore.svelte';
   import ComboBanner from '../components/game/ComboBanner.svelte';
   import RulesConfigPanel from '../components/lobby/RulesConfigPanel.svelte';
@@ -25,6 +26,7 @@
     connect,
     startGame,
     restartGame,
+    ackTurnOrder,
     roll,
     keepSelection,
     bank,
@@ -33,12 +35,14 @@
     getCanRoll,
     getCanKeep,
     getCanBank,
+    getIsKeepPending,
     getBothSeated,
     getDicePickWaitText,
     getSelectionPreview,
     getMySelectedDieIds,
     getRemoteSelectedDieIds,
     isOpponentSelecting,
+    tryReconnect,
     clearError,
   } from '$lib/client/gameSession.svelte';
 
@@ -71,8 +75,19 @@
   $effect(() => {
     if (!roomId || !playerName) return;
     const id = roomId.trim().toUpperCase();
-    if (session.roomId === id && (session.connected || session.connecting)) return;
+    if (session.roomId === id && session.connected && session.you) return;
     connect(id, playerName);
+  });
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    const onVisible = (): void => {
+      if (document.visibilityState === 'visible') {
+        tryReconnect(playerName);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   });
 
   $effect(() => {
@@ -85,6 +100,16 @@
     const phase = session.state?.phase;
     if (phase === 'turn_end' || phase === 'bust' || phase === 'game_over') {
       prevTurnScore = 0;
+    }
+  });
+
+  $effect(() => {
+    const s = session.state;
+    if (!s) return;
+    const phase = s.phase;
+    if (phase === 'bust' || phase === 'turn_end' || phase === 'hot_dice' || (s.lastBust && s.rollCount === 0)) {
+      physicsRolling = false;
+      prevRollCount = s.rollCount;
     }
   });
 
@@ -138,6 +163,7 @@
 
   function handleKeep(): void {
     if (!session.state) return;
+    physicsRolling = false;
     lastKeepFaces = session.selectedDieIds
       .map((id) => session.state!.dice.find((d) => d.id === id)?.value)
       .filter((v): v is DieFace => v !== undefined);
@@ -148,8 +174,10 @@
   let canRoll = $derived(getCanRoll());
   let canKeep = $derived(getCanKeep());
   let canBank = $derived(getCanBank());
+  let keepPending = $derived(getIsKeepPending());
   let preview = $derived(getSelectionPreview());
   let inLobby = $derived(session.state?.phase === 'lobby');
+  let inTurnOrder = $derived(session.state?.phase === 'turn_order');
   let inDiceSelection = $derived(session.state?.phase === 'dice_selection');
   let bothSeated = $derived(getBothSeated());
   let dicePickWaitText = $derived(getDicePickWaitText());
@@ -193,9 +221,17 @@
     return player?.name ?? '';
   });
 
+  let firstPlayerName = $derived.by(() => {
+    const flip = session.state?.coinFlip;
+    if (!flip || !session.state) return '';
+    const player = session.state.players.find((p) => p.id === flip.firstPlayer);
+    return player?.name ?? '';
+  });
+
   let mySelectedDieIds = $derived(getMySelectedDieIds());
   let remoteSelectedDieIds = $derived(getRemoteSelectedDieIds());
   let opponentSelecting = $derived(isOpponentSelecting());
+  let opponentAway = $derived(session.state?.opponentAway ?? false);
 
   let isWinner = $derived(session.state?.winner != null && session.state.winner === session.you);
   let canRestart = $derived(session.you === 'host' && session.state?.phase === 'game_over');
@@ -203,6 +239,7 @@
   let showDice = $derived(
     session.state &&
       !inLobby &&
+      !inTurnOrder &&
       !inDiceSelection &&
       session.state.phase !== 'rps' &&
       session.state.phase !== 'draft_rps',
@@ -221,10 +258,11 @@
       gameQuotes.stop();
       return;
     }
+    gameQuotes.onGameEnter();
     const phase = session.state?.phase;
     const rollCount = session.state?.rollCount ?? 0;
     gameQuotes.handlePhaseChange(phase, rollCount);
-    gameQuotes.handlePhaseQuote(phase, isWinner);
+    gameQuotes.handlePhaseQuote(phase, isWinner, session.state?.lastBust ?? null);
   });
 
   $effect(() => {
@@ -361,6 +399,8 @@
           {/if}
         {:else if inDiceSelection}
           <DiceSelector />
+        {:else if inTurnOrder}
+          <div class="game-page__spacer"></div>
         {:else if showDice}
           <div class="game-page__play">
             <GameHud state={session.state} you={session.you} />
@@ -396,13 +436,33 @@
         <p class="game-page__loading">无法连接房间</p>
       {/if}
 
-      {#if !showDice}
+      {#if !showDice && !inTurnOrder}
         <div class="game-page__spacer"></div>
       {/if}
+
+      <div class="game-page__toast-slot">
+        <PhaseOverlay
+          phase={session.state?.phase ?? null}
+          rollCount={session.state?.rollCount ?? 0}
+          {winnerName}
+          {isMyTurn}
+          {isWinner}
+          {opponentName}
+          {bustPlayerName}
+          lastBust={session.state?.lastBust ?? null}
+          lastTurnEnd={session.state?.lastTurnEnd ?? null}
+          {turnEndPlayerName}
+          you={session.you}
+          {canRestart}
+          onLeave={() => onLeave?.()}
+          onRestart={restartGame}
+        />
+      </div>
 
       <ActionBar
         {inLobby}
         {inDiceSelection}
+        inTurnOrder={inTurnOrder}
         {isMyTurn}
         {canRoll}
         {canKeep}
@@ -411,6 +471,8 @@
         {dicePickWaitText}
         opponentWaitName={opponentName}
         {opponentSelecting}
+        {opponentAway}
+        keepPending={keepPending}
         turnScore={session.state?.turnScore ?? 0}
         onRoll={roll}
         onKeep={handleKeep}
@@ -418,20 +480,12 @@
       />
     </main>
 
-    <PhaseOverlay
-      phase={session.state?.phase ?? null}
-      {winnerName}
-      {isMyTurn}
-      {isWinner}
-      {opponentName}
-      {bustPlayerName}
-      lastBust={session.state?.lastBust ?? null}
-      lastTurnEnd={session.state?.lastTurnEnd ?? null}
-      {turnEndPlayerName}
-      you={session.you}
-      {canRestart}
-      onLeave={() => onLeave?.()}
-      onRestart={restartGame}
+    <CoinFlipOverlay
+      coinFlip={inTurnOrder ? (session.state?.coinFlip ?? null) : null}
+      {firstPlayerName}
+      onComplete={() => {
+        if (session.you === 'host') ackTurnOrder();
+      }}
     />
 
     <FloatingScore show={floatShow} amount={floatAmount} x={floatX} y={floatY} />
@@ -482,10 +536,11 @@
 
   .game-page__quote {
     flex: none;
+    flex-shrink: 0;
     width: 100%;
     max-width: min(640px, 100%);
     margin-inline: auto;
-    padding: 0 var(--space-2) var(--space-1);
+    padding: 0 var(--space-2);
     opacity: 0.95;
   }
 
@@ -494,27 +549,54 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 0;
     width: 100%;
-    padding: var(--space-2) var(--space-1);
+    padding: var(--space-1) 0 0;
   }
 
   .game-page__center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: var(--space-4);
+    justify-content: flex-start;
+    gap: var(--space-2);
     width: 100%;
     max-width: min(640px, 100%);
-    margin-block: auto;
+    margin-top: var(--space-1);
   }
 
   .game-page__main--play {
     min-height: 0;
     gap: 0;
     padding-top: var(--space-1);
+  }
+
+  .game-page__toast-slot {
+    flex: none;
+    width: 100%;
+    max-width: min(640px, 100%);
+    margin-inline: auto;
+    padding: 0 var(--space-2);
+    pointer-events: none;
+  }
+
+  @media (min-width: 768px) {
+    .game-page__quote {
+      padding: 0 var(--space-2) var(--space-1);
+    }
+
+    .game-page__stage {
+      justify-content: center;
+      padding: var(--space-2) var(--space-1);
+    }
+
+    .game-page__center {
+      justify-content: center;
+      gap: var(--space-4);
+      margin-top: 0;
+      margin-block: auto;
+    }
   }
 
   @media (min-width: 1024px) {

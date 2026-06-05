@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
+  import { prefersReducedMotion } from '$lib/ui/animation';
   import type { TavernQuote } from '$lib/ui/tavernQuotes';
 
   interface Props {
@@ -9,13 +10,7 @@
 
   let { quote, compact = false }: Props = $props();
 
-  let reduceMotion = $state(false);
-
-  $effect(() => {
-    reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  });
+  let reduceMotion = $derived(prefersReducedMotion());
 </script>
 
 {#if quote}
@@ -114,16 +109,5 @@
 
   .tavern-quote--compact .tavern-quote__text {
     font-size: 0.75rem;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tavern-quote__bubble {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-    }
-    .tavern-quote__bubble::after {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-    }
   }
 </style>

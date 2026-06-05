@@ -52,6 +52,7 @@ export function createGameQuoteController() {
   let gameStartShown = false;
   let lastBigScorePreview = false;
   let prevPhase: string | null = null;
+  let lastBustQuoteKey = '';
 
   function show(trigger: QuoteTrigger): void {
     const picked = pickTavernQuote(trigger);
@@ -75,6 +76,18 @@ export function createGameQuoteController() {
     gameStartShown = false;
     lastBigScorePreview = false;
     prevPhase = null;
+    lastBustQuoteKey = '';
+    quote = null;
+  }
+
+  /** 进入对局页：首句语录（仅首次） */
+  function onGameEnter(): void {
+    if (!gameStartShown) {
+      gameStartShown = true;
+      show('game_start');
+    } else if (!quote) {
+      show('idle');
+    }
   }
 
   function handlePhaseChange(
@@ -82,12 +95,7 @@ export function createGameQuoteController() {
     rollCount: number,
   ): void {
     const p = phase ?? null;
-    if (
-      p === 'selecting' &&
-      rollCount === 0 &&
-      (prevPhase === 'dice_selection' || prevPhase === 'lobby') &&
-      !gameStartShown
-    ) {
+    if (p === 'selecting' && rollCount === 0 && !gameStartShown) {
       gameStartShown = true;
       show('game_start');
     }
@@ -115,11 +123,16 @@ export function createGameQuoteController() {
   function handlePhaseQuote(
     phase: string | undefined,
     isWinner: boolean,
+    lastBust?: { by: string; dice: { id: number }[] } | null,
   ): void {
-    if (phase === 'bust') {
+    if (lastBust) {
+      const key = `${lastBust.by}:${lastBust.dice.map((d) => d.id).join(',')}`;
+      if (key === lastBustQuoteKey) return;
+      lastBustQuoteKey = key;
       show('bust');
       return;
     }
+    lastBustQuoteKey = '';
     if (phase === 'game_over') {
       show(isWinner ? 'win' : 'lose');
     }
@@ -133,6 +146,7 @@ export function createGameQuoteController() {
     resetIdle,
     onActivity,
     stop,
+    onGameEnter,
     handlePhaseChange,
     handlePreview,
     handleTurnScoreDelta,

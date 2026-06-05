@@ -37,8 +37,5 @@ export function saveGameSettings(settings: GameSettings): void {
 }
 
 export function isPhysicsEnabled(): boolean {
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return false;
-  }
   return loadGameSettings().physicsEnabled;
 }

@@ -14,6 +14,8 @@ export interface SessionStore {
   selectedDieIds: number[];
   /** 选骰阶段本地多选（尚未提交） */
   selectedPickIds: string[];
+  /** 已发送 keep、等待服务端确认 */
+  pendingKeepIds: number[] | null;
 }
 
 function createInitialStore(): SessionStore {
@@ -26,6 +28,7 @@ function createInitialStore(): SessionStore {
     lastError: null,
     selectedDieIds: [],
     selectedPickIds: [],
+    pendingKeepIds: null,
   };
 }
 
@@ -34,14 +37,41 @@ export const session = $state<SessionStore>(createInitialStore());
 const socket = getGameSocket();
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let handlersBound = false;
-/** 已发送 keep、等待服务端确认的骰子 id */
-let pendingKeepIds: number[] | null = null;
 /** 已发送 pickDice、等待服务端确认的选骰 id */
 let pendingPickIds: string[] | null = null;
 let connectInFlight: Promise<void> | null = null;
 let connectTargetId: string | null = null;
 let leaveDisconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let selectDiceTimer: ReturnType<typeof setTimeout> | null = null;
+const JOIN_TIMEOUT_MS = 12_000;
+
+type JoinWaiter = {
+  resolve: () => void;
+  reject: (message: string) => void;
+  timeout: ReturnType<typeof setTimeout>;
+};
+
+let joinWaiter: JoinWaiter | null = null;
+
+function clearJoinWaiter(): void {
+  if (!joinWaiter) return;
+  clearTimeout(joinWaiter.timeout);
+  joinWaiter = null;
+}
+
+function resolveJoinWaiter(): void {
+  if (!joinWaiter) return;
+  const waiter = joinWaiter;
+  clearJoinWaiter();
+  waiter.resolve();
+}
+
+function rejectJoinWaiter(message: string): void {
+  if (!joinWaiter) return;
+  const waiter = joinWaiter;
+  clearJoinWaiter();
+  waiter.reject(message);
+}
 
 function scheduleSelectDiceSync(): void {
   if (selectDiceTimer) clearTimeout(selectDiceTimer);
@@ -79,6 +109,9 @@ function bindHandlers(): void {
     onOpen: () => {
       session.connected = true;
       session.connecting = false;
+      if (session.lastError?.includes('连接已断开')) {
+        session.lastError = null;
+      }
     },
     onState: (state, you) => {
       const prev = session.state;
@@ -95,6 +128,11 @@ function bindHandlers(): void {
       if (you) {
         const me = state.players.find((p) => p.id === you);
         if (me?.name) savePlayerName(me.name);
+        if (joinWaiter) resolveJoinWaiter();
+      }
+
+      if (state.lastBust && state.rollCount === 0) {
+        session.pendingKeepIds = null;
       }
 
       if (state.phase === 'dice_selection') {
@@ -109,24 +147,24 @@ function bindHandlers(): void {
         session.selectedPickIds = [];
       }
 
-      if (pendingKeepIds) {
-        const keptNow = pendingKeepIds.every((id) => state.dice.find((d) => d.id === id)?.kept);
+      if (session.pendingKeepIds) {
+        const keptNow = session.pendingKeepIds.every((id) => state.dice.find((d) => d.id === id)?.kept);
         if (keptNow || state.turnScore > prevTurnScore) {
-          pendingKeepIds = null;
+          session.pendingKeepIds = null;
           session.lastError = null;
         }
       }
 
       if (!isMyTurn) {
         session.selectedDieIds = [];
-        pendingKeepIds = null;
-      } else if (pendingKeepIds) {
+        session.pendingKeepIds = null;
+      } else if (session.pendingKeepIds) {
         // 等待 keep 确认期间保留选中，避免误清空
-        const pending = new Set(pendingKeepIds);
+        const pending = new Set(session.pendingKeepIds);
         session.selectedDieIds = [
           ...new Set([
             ...session.selectedDieIds.filter((id) => pending.has(id)),
-            ...pendingKeepIds,
+            ...session.pendingKeepIds,
           ]),
         ];
       } else {
@@ -147,17 +185,31 @@ function bindHandlers(): void {
       }
     },
     onError: (message) => {
-      pendingKeepIds = null;
+      session.pendingKeepIds = null;
       if (session.state?.phase === 'dice_selection' && pendingPickIds) {
         session.selectedPickIds = [...pendingPickIds];
         pendingPickIds = null;
+      }
+      if (joinWaiter) {
+        rejectJoinWaiter(message);
+        disconnect();
+        return;
       }
       showError(message);
     },
     onClose: () => {
       session.connected = false;
       session.connecting = false;
-      showError('连接已断开');
+      if (joinWaiter) {
+        rejectJoinWaiter('连接已断开');
+        disconnect();
+        return;
+      }
+      if (session.you && session.state && session.state.phase !== 'lobby') {
+        showError('连接已断开，回到页面将自动重连');
+      } else {
+        showError('连接已断开');
+      }
     },
   });
 }
@@ -180,6 +232,7 @@ export function getCanRoll(): boolean {
   if (p !== 'selecting') return false;
   if (session.state.rollCount !== 0) return false;
   if (session.state.awaitingKeep) return false;
+  if (session.pendingKeepIds) return false;
   return session.state.dice.some((d) => d.active && !d.kept);
 }
 
@@ -189,8 +242,13 @@ function hasValidSelection(): boolean {
   return evaluateSelection(selectable, session.selectedDieIds).valid;
 }
 
+export function getIsKeepPending(): boolean {
+  return session.pendingKeepIds != null;
+}
+
 export function getCanKeep(): boolean {
   if (!session.state || !getIsMyTurn() || session.state.phase !== 'selecting') return false;
+  if (session.pendingKeepIds) return false;
   if (session.state.rollCount === 0) return false;
   return hasValidSelection();
 }
@@ -279,6 +337,87 @@ function showError(message: string): void {
   }, 4000);
 }
 
+export async function joinRoom(roomId: string, name: string): Promise<void> {
+  bindHandlers();
+
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    throw new Error('昵称不能为空');
+  }
+
+  const id = roomId.trim().toUpperCase();
+  if (!id) {
+    throw new Error('房间暗号不能为空');
+  }
+
+  if (session.roomId === id && session.connected && session.you) {
+    const me = session.state?.players.find((p) => p.id === session.you);
+    if (me?.name === trimmedName) return;
+  }
+
+  clearJoinWaiter();
+  if (session.connected || session.connecting) {
+    disconnect();
+  }
+
+  return new Promise((resolve, reject) => {
+    joinWaiter = {
+      resolve: () => resolve(),
+      reject: (message) => reject(new Error(message)),
+      timeout: setTimeout(() => {
+        rejectJoinWaiter('加入超时，请重试');
+        disconnect();
+      }, JOIN_TIMEOUT_MS),
+    };
+
+    void performConnect(id, trimmedName).catch(() => {
+      if (joinWaiter) {
+        rejectJoinWaiter('无法连接服务器');
+        disconnect();
+      }
+    });
+  });
+}
+
+async function performConnect(id: string, trimmedName: string): Promise<void> {
+  if (connectInFlight && connectTargetId === id) {
+    await connectInFlight;
+    if (!session.connected) throw new Error('无法连接服务器');
+    socket.send({ type: 'join', name: trimmedName });
+    return;
+  }
+
+  if (session.connected && session.roomId !== id) {
+    socket.send({ type: 'leave' });
+    disconnect();
+  }
+
+  session.connecting = true;
+  session.roomId = id;
+  session.lastError = null;
+  session.selectedDieIds = [];
+  session.selectedPickIds = [];
+  session.pendingKeepIds = null;
+  pendingPickIds = null;
+
+  connectTargetId = id;
+
+  connectInFlight = (async () => {
+    try {
+      await socket.connect(roomUrl(id));
+      socket.send({ type: 'join', name: trimmedName });
+    } catch {
+      session.connecting = false;
+      throw new Error('无法连接服务器');
+    } finally {
+      connectInFlight = null;
+      connectTargetId = null;
+    }
+  })();
+
+  await connectInFlight;
+}
+
 export async function connect(roomId: string, name: string): Promise<void> {
   bindHandlers();
 
@@ -291,6 +430,10 @@ export async function connect(roomId: string, name: string): Promise<void> {
   const id = roomId.trim().toUpperCase();
   if (!id) {
     showError('房间号不能为空');
+    return;
+  }
+
+  if (session.roomId === id && session.connected && session.you) {
     return;
   }
 
@@ -308,36 +451,20 @@ export async function connect(roomId: string, name: string): Promise<void> {
     return;
   }
 
-  if (session.connected && session.roomId !== id) {
-    socket.send({ type: 'leave' });
-    disconnect();
+  try {
+    await performConnect(id, trimmedName);
+  } catch {
+    showError('无法连接服务器');
   }
+}
 
-  session.connecting = true;
-  session.roomId = id;
-  session.lastError = null;
-  session.selectedDieIds = [];
-  session.selectedPickIds = [];
-  pendingKeepIds = null;
-  pendingPickIds = null;
-
-  connectTargetId = id;
-  savePlayerName(trimmedName);
-
-  connectInFlight = (async () => {
-    try {
-      await socket.connect(roomUrl(id));
-      socket.send({ type: 'join', name: trimmedName });
-    } catch {
-      session.connecting = false;
-      showError('无法连接服务器');
-    } finally {
-      connectInFlight = null;
-      connectTargetId = null;
-    }
-  })();
-
-  await connectInFlight;
+/** 切回前台或断线后尝试用原昵称重连（宽限期内可续局） */
+export function tryReconnect(name: string): void {
+  const trimmed = name.trim();
+  if (!trimmed || !session.roomId) return;
+  if (session.connected && session.you) return;
+  if (session.connecting) return;
+  void connect(session.roomId, trimmed);
 }
 
 export function disconnect(): void {
@@ -345,7 +472,7 @@ export function disconnect(): void {
     clearTimeout(leaveDisconnectTimer);
     leaveDisconnectTimer = null;
   }
-  pendingKeepIds = null;
+  session.pendingKeepIds = null;
   pendingPickIds = null;
   socket.disconnect();
   Object.assign(session, createInitialStore());
@@ -371,7 +498,7 @@ export function leaveRoom(): void {
 }
 
 export function startGame(config?: Partial<GameConfig>): void {
-  pendingKeepIds = null;
+  session.pendingKeepIds = null;
   pendingPickIds = null;
   session.selectedDieIds = [];
   session.selectedPickIds = [];
@@ -380,11 +507,16 @@ export function startGame(config?: Partial<GameConfig>): void {
 
 export function restartGame(): void {
   if (!getCanRestart()) return;
-  pendingKeepIds = null;
+  session.pendingKeepIds = null;
   pendingPickIds = null;
   session.selectedDieIds = [];
   session.selectedPickIds = [];
   socket.send({ type: 'start' });
+}
+
+export function ackTurnOrder(): void {
+  if (session.state?.phase !== 'turn_order' || session.you !== 'host') return;
+  socket.send({ type: 'ackTurnOrder' });
 }
 
 export function submitDicePick(): void {
@@ -411,16 +543,26 @@ export function togglePickDie(dieId: string): void {
 }
 
 export function roll(): void {
-  if (!getCanRoll()) return;
+  const s = session.state;
+  if (!s || !getIsMyTurn()) return;
+
+  const resumeTurn =
+    s.rollCount === 0 && (s.lastBust || s.phase === 'turn_end' || s.phase === 'hot_dice');
+  if (!resumeTurn && !getCanRoll()) return;
+  if (resumeTurn) {
+    if (session.pendingKeepIds) return;
+    if (!s.dice.some((d) => d.active && !d.kept)) return;
+  }
+
   session.selectedDieIds = [];
-  pendingKeepIds = null;
+  session.pendingKeepIds = null;
   socket.send({ type: 'roll' });
 }
 
 export function keepSelection(): void {
   if (!getCanKeep()) return;
   const ids = [...session.selectedDieIds];
-  pendingKeepIds = ids;
+  session.pendingKeepIds = ids;
   session.selectedDieIds = [];
   socket.send({ type: 'keep', dieIds: ids });
 }
@@ -429,7 +571,7 @@ export function bank(): void {
   if (!getCanBank()) return;
   const dieIds = hasValidSelection() ? [...session.selectedDieIds] : undefined;
   session.selectedDieIds = [];
-  pendingKeepIds = null;
+  session.pendingKeepIds = null;
   socket.send(dieIds?.length ? { type: 'bank', dieIds } : { type: 'bank' });
 }
 

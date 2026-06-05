@@ -59,8 +59,8 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    padding: var(--space-4) var(--space-4) var(--space-3);
-    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3) var(--space-2);
+    gap: var(--space-2);
   }
 
   .dice-table__rules {
@@ -145,8 +145,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(var(--die-size) + var(--space-6));
-    padding: var(--space-1) 0;
+    min-height: calc(var(--die-size) * 2 + var(--die-gap) * 2 + var(--space-2));
+    padding: 0;
   }
 
   .dice-table__hint {
@@ -161,6 +161,12 @@
   @media (min-width: 768px) {
     .dice-table__surface {
       padding: var(--space-5) var(--space-5) var(--space-4);
+      gap: var(--space-3);
+    }
+
+    .dice-table__play {
+      min-height: calc(var(--die-size) + var(--space-6));
+      padding: var(--space-1) 0;
     }
 
     .dice-table__ornament {

@@ -1,11 +1,14 @@
 import {
+  clearPlayerAway,
   createInitialState,
+  finishTurnOrder,
   handleBank,
   handleKeep,
   handleRoll,
   handleSelectDice,
   joinPlayer,
   leavePlayer,
+  markPlayerAway,
   normalizeTurnPhase,
   startGame,
   submitDicePick,
@@ -35,13 +38,60 @@ export class GameRoom implements DurableObject {
         ...saved,
         pendingSelection: saved.pendingSelection ?? [],
         lastTurnEnd: saved.lastTurnEnd ?? null,
+        coinFlip: saved.coinFlip ?? null,
+        awayUntil: saved.awayUntil ?? {},
       };
     }
     this.stateLoaded = true;
+    await this.expireAwayPlayers();
   }
 
   private commitState(): void {
     void this.ctx.storage.put(GAME_STATE_KEY, this.gameState);
+  }
+
+  async alarm(): Promise<void> {
+    await this.ensureStateLoaded();
+    await this.expireAwayPlayers();
+  }
+
+  private async expireAwayPlayers(): Promise<void> {
+    const now = Date.now();
+    let changed = false;
+
+    for (const who of ['host', 'guest'] as PlayerId[]) {
+      const until = this.gameState.awayUntil[who];
+      if (until != null && until <= now) {
+        this.gameState = clearPlayerAway(this.gameState, who);
+        this.gameState = leavePlayer(this.gameState, who);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.commitState();
+      this.broadcast();
+    }
+
+    await this.scheduleAwayAlarm();
+  }
+
+  private async scheduleAwayAlarm(): Promise<void> {
+    const now = Date.now();
+    const future = Object.values(this.gameState.awayUntil).filter(
+      (t): t is number => t != null && t > now,
+    );
+
+    if (future.length === 0) {
+      try {
+        await this.ctx.storage.deleteAlarm();
+      } catch {
+        /* no alarm set */
+      }
+      return;
+    }
+
+    await this.ctx.storage.setAlarm(Math.min(...future));
   }
 
   private readMeta(ws: WebSocket): SessionMeta {
@@ -130,6 +180,9 @@ export class GameRoom implements DurableObject {
         }
         this.handleAction(ws, meta, () => handleSelectDice(this.gameState, meta.playerId!, msg.dieIds));
         break;
+      case 'ackTurnOrder':
+        this.handleAckTurnOrder(ws, meta);
+        break;
       case 'leave':
         this.handleLeave(ws, meta);
         break;
@@ -138,11 +191,13 @@ export class GameRoom implements DurableObject {
 
   private handleLeave(ws: WebSocket, meta: SessionMeta): void {
     if (meta.playerId) {
+      this.gameState = clearPlayerAway(this.gameState, meta.playerId);
       this.gameState = leavePlayer(this.gameState, meta.playerId);
       meta.playerId = null;
       meta.name = '';
       this.writeMeta(ws, meta);
       this.commitState();
+      void this.scheduleAwayAlarm();
       this.broadcast();
     }
     try {
@@ -158,8 +213,9 @@ export class GameRoom implements DurableObject {
 
     const meta = this.readMeta(ws);
     if (meta.playerId) {
-      this.gameState = leavePlayer(this.gameState, meta.playerId);
+      this.gameState = markPlayerAway(this.gameState, meta.playerId);
       this.commitState();
+      void this.scheduleAwayAlarm();
       this.broadcast();
     }
     this.sessions.delete(ws);
@@ -175,6 +231,39 @@ export class GameRoom implements DurableObject {
       return;
     }
 
+    const trimmed = name.trim().slice(0, 24);
+    if (!trimmed) {
+      this.sendError(ws, '昵称不能为空');
+      return;
+    }
+
+    const hostName = this.gameState.players[0].name;
+    const guestName = this.gameState.players[1].name;
+
+    if (hostName === trimmed && !this.isRoleConnected('host')) {
+      this.gameState = clearPlayerAway(this.gameState, 'host');
+      meta.playerId = 'host';
+      meta.name = trimmed;
+      this.writeMeta(ws, meta);
+      this.commitState();
+      void this.scheduleAwayAlarm();
+      this.sendTo(ws, this.gameState, 'host');
+      this.broadcast();
+      return;
+    }
+
+    if (guestName === trimmed && !this.isRoleConnected('guest')) {
+      this.gameState = clearPlayerAway(this.gameState, 'guest');
+      meta.playerId = 'guest';
+      meta.name = trimmed;
+      this.writeMeta(ws, meta);
+      this.commitState();
+      void this.scheduleAwayAlarm();
+      this.sendTo(ws, this.gameState, 'guest');
+      this.broadcast();
+      return;
+    }
+
     const result = joinPlayer(this.gameState, name);
     if ('error' in result) {
       this.sendError(ws, result.error);
@@ -183,10 +272,19 @@ export class GameRoom implements DurableObject {
 
     this.gameState = result.state;
     meta.playerId = result.role;
-    meta.name = name.trim().slice(0, 24);
+    meta.name = trimmed;
     this.writeMeta(ws, meta);
     this.commitState();
     this.broadcast();
+  }
+
+  private isRoleConnected(role: PlayerId): boolean {
+    const sockets = this.ctx.getWebSockets?.() ?? [...this.sessions.keys()];
+    for (const socket of sockets) {
+      const m = this.readMeta(socket);
+      if (m.playerId === role) return true;
+    }
+    return false;
   }
 
   private handleStart(ws: WebSocket, meta: SessionMeta, config?: Partial<GameConfig>): void {
@@ -196,6 +294,23 @@ export class GameRoom implements DurableObject {
     }
 
     const result = startGame(this.gameState, 'host', config);
+    if ('error' in result) {
+      this.sendError(ws, result.error);
+      return;
+    }
+
+    this.gameState = result;
+    this.commitState();
+    this.broadcast();
+  }
+
+  private handleAckTurnOrder(ws: WebSocket, meta: SessionMeta): void {
+    if (meta.playerId !== 'host') {
+      this.sendError(ws, '仅房主可推进');
+      return;
+    }
+
+    const result = finishTurnOrder(this.gameState, 'host');
     if ('error' in result) {
       this.sendError(ws, result.error);
       return;

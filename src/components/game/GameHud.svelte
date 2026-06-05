@@ -74,8 +74,8 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) 0 var(--space-3);
+    gap: var(--space-1);
+    padding: var(--space-1) 0 var(--space-2);
     flex: none;
     width: 100%;
     max-width: min(720px, 100%);
@@ -100,8 +100,8 @@
   }
 
   .game-hud__avatar {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 2px solid var(--color-border-gold);
     object-fit: cover;
@@ -162,7 +162,7 @@
 
   .game-hud__score {
     font-family: var(--font-mono);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--color-text-on-dark);
     line-height: 1.15;
@@ -178,8 +178,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2) var(--space-4);
-    min-width: 5.5rem;
+    padding: var(--space-1) var(--space-3);
+    min-width: 4.75rem;
     border: 1px solid rgba(201, 168, 106, 0.35);
     border-radius: var(--radius-pill);
     background: rgba(0, 0, 0, 0.32);
@@ -202,6 +202,11 @@
   }
 
   @media (min-width: 640px) {
+    .game-hud {
+      gap: var(--space-2);
+      padding: var(--space-2) 0 var(--space-3);
+    }
+
     .game-hud__avatar {
       width: 52px;
       height: 52px;
@@ -213,6 +218,11 @@
 
     .game-hud__score {
       font-size: 1.625rem;
+    }
+
+    .game-hud__target {
+      padding: var(--space-2) var(--space-4);
+      min-width: 5.5rem;
     }
   }
 </style>

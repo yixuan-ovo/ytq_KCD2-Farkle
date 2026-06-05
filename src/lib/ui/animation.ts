@@ -23,9 +23,9 @@ export const SCORE_SPARK_OFFSETS = [
   { x: -8, y: -12 },
 ] as const;
 
+/** 游戏内始终播放完整动效，不跟随系统「减少动画」设置 */
 export function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return false;
 }
 
 export interface Point {

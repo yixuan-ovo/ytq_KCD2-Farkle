@@ -62,7 +62,7 @@ export interface GameConfig {
 export const DEFAULT_CONFIG: GameConfig = {
   targetScore: 4000,
   badgesEnabled: false,
-  specialDiceCount: 2,
+  specialDiceCount: 0,
   selectionMode: 'free',
   activeBadges: [],
 };
@@ -87,9 +87,10 @@ export interface Player {
 
 export type GamePhase =
   | 'lobby'           // 大厅：等待玩家加入
+  | 'turn_order'      // 金币一掷：随机定先后手
   | 'dice_selection'  // 骰子选择：双方选取特殊骰子
   | 'draft_rps'       // 轮抓猜拳：决定抓取顺序
-  | 'rps'             // 猜拳：决定先手
+  | 'rps'             // 猜拳：决定先手（预留）
   | 'rolling'         // 掷骰中（等待动画）
   | 'selecting'       // 玩家选择骰子
   | 'bust'            // 爆点动画
@@ -108,6 +109,13 @@ export interface TurnEndSnapshot {
   by: PlayerId;
   earned: number;
   dice: Die[];
+}
+
+/** 金币一掷快照（定先后手动画用） */
+export interface CoinFlipSnapshot {
+  firstPlayer: PlayerId;
+  /** true = 正面朝上 */
+  heads: boolean;
 }
 
 // ─────────────────────────────────────────────
@@ -139,4 +147,8 @@ export interface GameState {
   pendingSelection: number[];
   /** 最近一次收分结束快照；下一玩家掷骰后清除 */
   lastTurnEnd: TurnEndSnapshot | null;
+  /** 金币一掷结果；进入选骰/对局后清除 */
+  coinFlip: CoinFlipSnapshot | null;
+  /** 断线暂离宽限截止 (ms)，到期前同名可重连 */
+  awayUntil: Partial<Record<PlayerId, number>>;
 }

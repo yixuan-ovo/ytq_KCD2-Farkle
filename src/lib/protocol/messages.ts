@@ -9,17 +9,19 @@ export type ClientMessage =
   | { type: 'keep'; dieIds: number[] }
   | { type: 'bank'; dieIds?: number[] }
   | { type: 'selectDice'; dieIds: number[] }
+  | { type: 'ackTurnOrder' }
   | { type: 'leave' };
 
 /** 下发给客户端的状态（选骰阶段隐藏对手具体选择） */
 export type ClientGameState = GameState & {
   opponentDiceReady: boolean;
+  opponentAway: boolean;
+  opponentAwayUntil: number | null;
 };
 
-/** 服务器 → 客户端 */
-export type ServerMessage =
-  | { type: 'state'; state: ClientGameState; you: PlayerId | null }
-  | { type: 'error'; message: string };
+function opponentOf(you: PlayerId): PlayerId {
+  return you === 'host' ? 'guest' : 'host';
+}
 
 export function toClientGameState(state: GameState, you: PlayerId | null): ClientGameState {
   const n = state.config.specialDiceCount;
@@ -30,8 +32,18 @@ export function toClientGameState(state: GameState, you: PlayerId | null): Clien
         ? state.hostDice.length >= n
         : false;
 
+  const now = Date.now();
+  const opp = you ? opponentOf(you) : null;
+  const until = opp ? (state.awayUntil[opp] ?? null) : null;
+  const opponentAway = until != null && until > now;
+
+  const awayFields = {
+    opponentAway,
+    opponentAwayUntil: opponentAway ? until : null,
+  };
+
   if (state.phase !== 'dice_selection' || !you) {
-    return { ...state, opponentDiceReady: opponentReady };
+    return { ...state, opponentDiceReady: opponentReady, ...awayFields };
   }
 
   return {
@@ -39,8 +51,14 @@ export function toClientGameState(state: GameState, you: PlayerId | null): Clien
     hostDice: you === 'host' ? state.hostDice : [],
     guestDice: you === 'guest' ? state.guestDice : [],
     opponentDiceReady: opponentReady,
+    ...awayFields,
   };
 }
+
+/** 服务器 → 客户端 */
+export type ServerMessage =
+  | { type: 'state'; state: ClientGameState; you: PlayerId | null }
+  | { type: 'error'; message: string };
 
 export function parseClientMessage(raw: string): ClientMessage | null {
   try {

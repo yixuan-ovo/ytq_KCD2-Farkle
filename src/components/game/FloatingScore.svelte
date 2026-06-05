@@ -91,20 +91,4 @@
         scale(0.2);
     }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .floating-score {
-      animation: fadeScore 400ms ease-out forwards;
-    }
-
-    .floating-score__spark {
-      display: none;
-    }
-
-    @keyframes fadeScore {
-      to {
-        opacity: 0;
-      }
-    }
-  }
 </style>

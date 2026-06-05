@@ -363,12 +363,6 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .main-menu {
-      animation: none;
-    }
-  }
-
   @keyframes menuIn {
     from {
       opacity: 0;
