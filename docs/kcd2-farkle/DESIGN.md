@@ -36,7 +36,7 @@
 - **主题数据：** [`docs/dice/骰子模板.md`](../dice/骰子模板.md) → [`src/lib/assets/diceThemes.json`](../../src/lib/assets/diceThemes.json)
 - **生成：** `yarn dice:generate`（[`scripts/generate-themed-dice.mjs`](../../scripts/generate-themed-dice.mjs) + [`scripts/diceSvgCore.mjs`](../../scripts/diceSvgCore.mjs)）
 - **加载 API：** [`src/lib/assets/diceTextures.ts`](../../src/lib/assets/diceTextures.ts) — `getThemedFaceUrl` / `getPlaceholderFaceUrl` / `getDieFaceUrl`（按 `die.type`）
-- **图鉴 / 大厅装饰：** 仍用 [`public/dice/ivory/`](../../public/dice/ivory/) 通用六面（`DiceCard`、`TavernAmbience`）
+- **图鉴：** 仍用 [`public/dice/ivory/`](../../public/dice/ivory/) 通用六面（`DiceCard`）；**大厅背景** `TavernAmbience` 用六枚特殊骰 `face-hidden.svg`
 
 ### 掷骰飞散动画（GSAP + DOM）
 
