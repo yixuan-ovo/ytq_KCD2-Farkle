@@ -13,7 +13,27 @@
 
 ---
 
-## 1. 前端（Cloudflare Pages）
+## 1. 日常发布（推荐：Git 自动部署）
+
+**Pages** 与 **Worker** 均在 Cloudflare 控制台连接本仓库 GitHub；向 `main` **push** 后两边各自触发构建，无需本地 `wrangler pages deploy`。
+
+| 项目 | 控制台路径 | 构建 |
+|------|------------|------|
+| 前端 | Workers & Pages → `kcd2-farkle` | `yarn build` → 输出 `dist/` |
+| 后端 | Workers → `ytq-kcd2-farkle-api` | `worker/` 目录（见 `wrangler.toml`） |
+
+**发布流程：**
+
+1. 本地 `yarn test`（及必要时 `yarn run check`）
+2. `git push origin main`
+3. 在 Cloudflare 控制台确认 **Pages** 与 **Worker** 部署均为 Success
+4. 打开 `https://farkle.yixr.uno` 验收（双标签联机、邀请链接 `/room/{id}` 无 `?name=`）
+
+**本地开发注意：** 改 `worker/` 后须**重启** `yarn worker:dev`；改前端由 Vite HMR 热更新。仅 push 后生产环境才更新。
+
+---
+
+## 2. 前端（Cloudflare Pages）
 
 ### Build 设置
 
@@ -24,7 +44,11 @@
 | Node version | 20+ |
 | 环境变量 `VITE_WS_BASE` | `wss://farkle.yixr.uno` |
 
-### 一次性上传（当前用法）
+预览域：`https://kcd2-farkle.pages.dev`（每次部署会另有 `https://<hash>.kcd2-farkle.pages.dev`）。
+
+### 手动上传（备选）
+
+Git 集成异常或需紧急热修时：
 
 ```bash
 yarn install
@@ -32,19 +56,15 @@ yarn build
 npx wrangler pages deploy dist --project-name=kcd2-farkle --branch=main --commit-dirty=true
 ```
 
-预览域：`https://kcd2-farkle.pages.dev`（每次部署会另有 `https://<hash>.kcd2-farkle.pages.dev`）。
-
-### GitHub Actions（可选）
-
-在 Pages 项目设置中选 **GitHub Actions** 作为 Source，或使用 workflow 构建 `dist` 并 `actions/deploy-pages`。环境变量同上。
-
 ### SPA 路由
 
 `public/_redirects` 已配置：`/room/*` 与 `/*` → `index.html`（200）。
 
 ---
 
-## 2. 后端（Cloudflare Worker）
+## 3. 后端（Cloudflare Worker）
+
+日常由 Git 集成自动部署。手动备选：
 
 ```bash
 yarn install
@@ -64,17 +84,18 @@ Worker 名称：`ytq-kcd2-farkle-api`（见 `worker/wrangler.toml`）。
 
 ---
 
-## 3. 发布检查清单
+## 4. 发布检查清单
 
 - [ ] `yarn test` 通过
-- [ ] `yarn build` 成功，产物含 `VITE_WS_BASE=wss://farkle.yixr.uno`
-- [ ] `yarn worker:deploy` 成功
+- [ ] `git push` 后 Pages **与** Worker 控制台均显示部署成功
+- [ ] 生产构建含 `VITE_WS_BASE=wss://farkle.yixr.uno`（Pages 环境变量）
 - [ ] 双标签进同一房间可联机；邀请链接为 `/room/{id}` **无** `?name=房主昵称`
 - [ ] `https://farkle.yixr.uno/room/TEST` 显示游戏页而非纯文本
+- [ ] 切后台 2 分钟内回前台可重连续局（Worker 改动须已部署）
 
 ---
 
-## 4. 本地预览生产构建
+## 5. 本地预览生产构建
 
 ```bash
 yarn build

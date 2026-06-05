@@ -12,7 +12,7 @@
 ## 项目结构
 
 ```
-src/lib/game/          — 纯 TS 规则引擎（35 种骰子）
+src/lib/game/          — 纯 TS 规则引擎（39 种骰子）
 src/lib/assets/        — 骰面主题（diceThemes.json）与贴图 API（diceTextures.ts）
 src/lib/protocol/      — WebSocket 消息类型
 src/lib/client/        — 前端会话层（GameSocket + gameSession）
@@ -65,8 +65,7 @@ yarn worker:deploy
 
 ## 部署
 
-- 前端：Cloudflare Pages，见 [docs/pages-deploy.md](docs/pages-deploy.md)
-- 后端：Cloudflare Worker，见 [worker/README.md](worker/README.md)
+生产环境由 Cloudflare **Pages**（`kcd2-farkle`）与 **Worker**（`ytq-kcd2-farkle-api`）经控制台 Git 集成自动部署；向 `main` push 后两边各自构建。详见 [docs/pages-deploy.md](docs/pages-deploy.md) 与 [worker/README.md](worker/README.md)。
 
 对外域名：`farkle.yixr.uno`
 

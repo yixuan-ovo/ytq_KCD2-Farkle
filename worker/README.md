@@ -54,6 +54,10 @@ ws.send(JSON.stringify({ type: 'roll' }));
 
 ## 部署到 Cloudflare
 
+**日常：** 控制台已将本仓库 Worker（`ytq-kcd2-farkle-api`）连 GitHub，`main` push 后自动部署。本地改代码须重启 `yarn worker:dev`。
+
+**手动备选：**
+
 1. 登录：`npx wrangler login`
 2. 部署：`yarn deploy`
 
