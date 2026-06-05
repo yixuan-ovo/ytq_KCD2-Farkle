@@ -38,10 +38,8 @@
   function handleLeaveRoom(): void {
     leaveRoom();
     roomId = '';
-    playerName = '';
     view = 'lobby';
-    clearPlayerName();
-    window.history.pushState({}, '', '/');
+    window.history.replaceState({}, '', '/');
   }
 
   function handleLobbyEnter(id: string, name: string): void {
@@ -63,14 +61,17 @@
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   });
+
 </script>
 
-{#if view === 'game' && roomId}
-  <GameView {roomId} playerName={playerName} onLeave={handleLeaveRoom} />
-{:else}
-  <LobbyView
-    initialRoomId={roomId}
-    initialName={playerName}
-    onEnterRoom={handleLobbyEnter}
-  />
-{/if}
+{#key `${view}-${roomId}`}
+  {#if view === 'game' && roomId}
+    <GameView {roomId} playerName={playerName} onLeave={handleLeaveRoom} />
+  {:else}
+    <LobbyView
+      initialRoomId={roomId}
+      initialName={playerName}
+      onEnterRoom={handleLobbyEnter}
+    />
+  {/if}
+{/key}

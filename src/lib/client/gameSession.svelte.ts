@@ -4,6 +4,16 @@ import type { GameConfig, GamePhase, PlayerId } from '$lib/game/types';
 import { getGameSocket } from './GameSocket';
 import { roomUrl, savePlayerName } from './config';
 
+/** 对手离席通知（主动离开或宽限到期），供离席卡片展示 */
+export interface PartnerLeftNotice {
+  name: string;
+  wasInGame: boolean;
+  yourScore: number;
+  opponentScore: number;
+  youAreHost: boolean;
+  hostLeft: boolean;
+}
+
 export interface SessionStore {
   connected: boolean;
   connecting: boolean;
@@ -11,6 +21,7 @@ export interface SessionStore {
   you: PlayerId | null;
   state: ClientGameState | null;
   lastError: string | null;
+  partnerLeftNotice: PartnerLeftNotice | null;
   selectedDieIds: number[];
   /** 选骰阶段本地多选（尚未提交） */
   selectedPickIds: string[];
@@ -26,6 +37,7 @@ function createInitialStore(): SessionStore {
     you: null,
     state: null,
     lastError: null,
+    partnerLeftNotice: null,
     selectedDieIds: [],
     selectedPickIds: [],
     pendingKeepIds: null,
@@ -43,6 +55,8 @@ let connectInFlight: Promise<void> | null = null;
 let connectTargetId: string | null = null;
 let leaveDisconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let selectDiceTimer: ReturnType<typeof setTimeout> | null = null;
+/** 主动离开房间时置 true，防止 GameView connect effect 在断线后立即重连 */
+let intentionalLeave = false;
 const JOIN_TIMEOUT_MS = 12_000;
 
 type JoinWaiter = {
@@ -119,7 +133,17 @@ function bindHandlers(): void {
       const isMyTurn = Boolean(you && state.players[state.currentPlayerIndex].id === you);
 
       if (prev && you && detectOpponentLeft(prev, state, you)) {
-        showError('对手已离开牌桌');
+        const oppId = opponentId(you);
+        const opp = prev.players.find((p) => p.id === oppId);
+        const me = prev.players.find((p) => p.id === you);
+        session.partnerLeftNotice = {
+          name: opp?.name || '对手',
+          wasInGame: prev.phase !== 'lobby',
+          yourScore: me?.totalScore ?? 0,
+          opponentScore: opp?.totalScore ?? 0,
+          youAreHost: you === 'host',
+          hostLeft: oppId === 'host',
+        };
       }
 
       session.state = state;
@@ -329,6 +353,10 @@ export function clearError(): void {
   session.lastError = null;
 }
 
+export function clearPartnerLeftNotice(): void {
+  session.partnerLeftNotice = null;
+}
+
 function showError(message: string): void {
   session.lastError = message;
   if (toastTimer) clearTimeout(toastTimer);
@@ -339,6 +367,7 @@ function showError(message: string): void {
 
 export async function joinRoom(roomId: string, name: string): Promise<void> {
   bindHandlers();
+  intentionalLeave = false;
 
   const trimmedName = name.trim();
   if (!trimmedName) {
@@ -419,6 +448,8 @@ async function performConnect(id: string, trimmedName: string): Promise<void> {
 }
 
 export async function connect(roomId: string, name: string): Promise<void> {
+  if (intentionalLeave) return;
+
   bindHandlers();
 
   const trimmedName = name.trim();
@@ -460,6 +491,8 @@ export async function connect(roomId: string, name: string): Promise<void> {
 
 /** 切回前台或断线后尝试用原昵称重连（宽限期内可续局） */
 export function tryReconnect(name: string): void {
+  if (intentionalLeave) return;
+
   const trimmed = name.trim();
   if (!trimmed || !session.roomId) return;
   if (session.connected && session.you) return;
@@ -479,6 +512,8 @@ export function disconnect(): void {
 }
 
 export function leaveRoom(): void {
+  intentionalLeave = true;
+
   if (leaveDisconnectTimer) {
     clearTimeout(leaveDisconnectTimer);
     leaveDisconnectTimer = null;
@@ -486,12 +521,6 @@ export function leaveRoom(): void {
 
   if (session.connected) {
     socket.send({ type: 'leave' });
-    // 等服务端处理 leave 并广播给对手后再断开本地连接
-    leaveDisconnectTimer = setTimeout(() => {
-      leaveDisconnectTimer = null;
-      disconnect();
-    }, 150);
-    return;
   }
 
   disconnect();
@@ -505,13 +534,35 @@ export function startGame(config?: Partial<GameConfig>): void {
   socket.send({ type: 'start', config });
 }
 
-export function restartGame(): void {
-  if (!getCanRestart()) return;
+export function restartGame(): boolean {
+  if (session.you !== 'host') {
+    showError('仅房主可重开');
+    return false;
+  }
+  if (!session.connected) {
+    showError('未连接，无法重开');
+    return false;
+  }
+  if (session.state?.phase !== 'game_over') {
+    showError('对局尚未结束');
+    return false;
+  }
+  if (!session.state.players[0].name || !session.state.players[1].name) {
+    showError('对手已离开，无法重开');
+    return false;
+  }
+
   session.pendingKeepIds = null;
   pendingPickIds = null;
   session.selectedDieIds = [];
   session.selectedPickIds = [];
-  socket.send({ type: 'start' });
+
+  const ok = socket.send({ type: 'start' });
+  if (!ok) {
+    showError('重开失败，请重试');
+    return false;
+  }
+  return true;
 }
 
 export function ackTurnOrder(): void {
