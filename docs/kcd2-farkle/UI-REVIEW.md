@@ -242,7 +242,9 @@ flowchart TD
 
 对局内**无** `ScoreRulesPanel` / `ThrowPips`；完整得分表见大厅 `RulesSheet`。
 
-**掷骰：** 己方回合 `rollCount` 增加时触发 `playDiceRollAnimation`（约 0.85s：收拢→飞散→回槽）；设置关闭「掷骰飞散动画」或 `prefers-reduced-motion` → CSS `medievalRoll`。首掷前各骰显示 `face-hidden`（主题 icon）。
+**掷骰：** 己方回合且 `rollCount` **相对上一值递增**时触发 `playDiceRollAnimation`（约 0.85s：收拢→飞散→回槽）；`GameView` 用 `prevRollCount` 守卫，避免进 `selecting`（`rollCount===0`）或重连误开 `physicsRolling` 导致骰盘空白。设置关闭「掷骰飞散动画」或 `prefers-reduced-motion` → CSS `medievalRoll`。动画期间隐藏活动区 `shortName`。
+
+**首掷背面：** 进入对局（含选完特殊骰、金币定先后）且尚未掷骰时，盘内须显示 **6 枚** `face-hidden` 占位（`rollCount===0 && turnScore===0`）；特殊骰槽位显示对应主题 icon，其余为普通骰背面。
 
 **反馈：** 保留得分 `+N` 上浮；大组合横幅；爆点/Hot Dice/胜负全屏 overlay。
 
@@ -252,7 +254,13 @@ flowchart TD
 
 ### 4.9 结算
 
-`PhaseOverlay`：深色遮罩 + 金标题。`game_over`：离开 / 再来一局（房主）。
+`PhaseOverlay`（`game_over`）：**终局结算卡** — 胜负标题与副标题、决胜一击（`+分 → 总分/目标` + 收分骰）、双方终局比分（胜者 ♛）、离开 / 再来一局（房主）。达标收分无前置 `turn_end` toast。
+
+### 4.10 离席
+
+`PartnerLeftOverlay`：对手/房主离席通知（~3.2s 自动消失 + 进度条）。对局中展示离席前比分。房主离席 → 客人自动回主菜单；客人离席 → 房主留桌等人。**非**右上角 error toast。
+
+主动点「离开」：`App` SPA `replaceState('/')` 回大厅，不整页刷新。
 
 ---
 
@@ -261,10 +269,12 @@ flowchart TD
 | GamePhase | 界面 |
 |-----------|------|
 | `lobby` | 房内等待卡片 |
-| `dice_selection` | `DiceSelector` |
+| `dice_selection` | `DiceSelector`（有特殊骰时开局先进此阶段） |
+| `turn_order` | `CoinFlipOverlay`（无特殊骰：开局后；有特殊骰：双方选完骰后） |
 | `selecting` | 对局主界面 |
-| `bust` / `hot_dice` / `turn_end` | `PhaseOverlay` 自动消失 |
-| `game_over` | `PhaseOverlay` + 离开/重开 |
+| `bust` / `hot_dice` / `turn_end` | `PhaseOverlay` 居中 toast，~1.2s 自动消失 |
+| `game_over` | `PhaseOverlay` 终局结算卡 + 离开/重开 |
+| 对手离席 | `PartnerLeftOverlay`（phase 已回 `lobby`） |
 | `rps` / `draft_rps` | 占位「敬请期待」 |
 
 ---

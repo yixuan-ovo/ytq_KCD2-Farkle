@@ -1,35 +1,62 @@
 # UI 文案清单（弹窗 / 遮罩 / Toast / 提示）
 
 > 改措辞时按本表定位源码文件。动态插值用 `{变量}` 表示。  
-> 最后核对：2026-06-04
+> 最后核对：2026-06-06
 
 ---
 
 ## 1. 阶段提示（`PhaseOverlay.svelte`）
 
-> **布局：** `bust` / `turn_end` / `hot_dice` 为**底部紧凑条**（非全屏）；`game_over` 仍为居中弹窗。  
-> **Hot Dice：** 对局多为 `DiceBoard` 盘内轻提示「六枚全胜 · 点击掷骰」，较少进入 `hot_dice` 遮罩。
+> **布局：** `bust` / `turn_end` / `hot_dice` 为**居中紧凑卡片**（`pointer-events: none`，不挡底栏）；`game_over` 为**全屏终局结算卡**（可点击按钮）。  
+> **Hot Dice：** 对局多为 `DiceBoard` 盘内轻提示「六枚全胜 · 点击掷骰」，较少进入 `hot_dice` 遮罩。  
+> **定时：** 紧凑 toast 约 **1.2s**（有骰面）/ **0.9s**（无骰面）自动消失。
 
-### 1.1 阶段遮罩文案
+### 1.1 阶段 toast（非 `game_over`）
 
 | 场景 | 标题 | 副标题 | 附注 |
 |------|------|--------|------|
 | `bust`（己方爆点） | 本轮作废 | 以下骰面无法得分，本回合清零 | 展示 `lastBust` 中**未保留**的骰面 |
 | `bust`（对手爆点，轮到你） | 轮到你了 | `{who} 爆点，该你掷骰了` | `who` = `bustPlayerName` 或对手名 |
-| `hot_dice`（若仍触发遮罩） | 全部得分 | 六枚得分，再来一轮 | 约 3s 自动消失 |
+| `hot_dice`（若仍触发遮罩） | 全部得分 | 六枚得分，再来一轮 | 约 0.9s 自动消失 |
 | `turn_end`（轮到你，无快照） | 轮到你了 | 该你掷骰了 | — |
 | `turn_end`（对手收分，有 `lastTurnEnd`） | 对手收分 | `{name} 本回合 +{earned}` | 展示收分保留骰 |
 | `turn_end`（己方收分，有 `lastTurnEnd`） | 收分成功 | `+{earned} 分已累计` | 展示收分保留骰 |
 | `turn_end`（对手计分并跳过，旧逻辑兜底） | 计分成功 | `等待 {opponentName} 掷骰` | — |
-| `game_over`（你赢） | 你赢了！ | 恭喜计分达标 | **离开房间** / **再来一局**（房主） |
-| `game_over`（你输） | 胜局已定 | `{winnerName} 赢了` 或 `对局结束` | 同上 |
-| `game_over`（非房主） | — | — | 附言：**等待房主重开…** |
+
+### 1.2 终局结算卡（`game_over`）
+
+达标收分服务端**直接** `phase: game_over`（带 `lastTurnEnd` 快照），**不**先走 `turn_end` toast。
+
+| 区块 | 你赢 | 你输 |
+|------|------|------|
+| 标题 | 你赢了！ | 胜局已定 |
+| 副标题（有决胜手） | 最后一手 +{earned}，总分 {winnerTotal} 达标 | `{name}` 最后一手 +{earned}，总分达到 {targetScore} |
+| 副标题（无决胜手，兜底） | 恭喜计分达标 | `{winnerName} 赢了` 或 `对局结束` |
+| 决胜一击区 | 标签「决胜一击 · {name}」；`+{earned} 分 → 总分 {winnerTotal} / {targetScore}`；收分骰面 | 同上（视角为对手名） |
+| 终局比分 | 你 / 对手 两行，`totalScore`，胜者 ♛ | 同上 |
+| 按钮 | **离开房间** / **再来一局**（房主，重开中显示「重开中…」） | **离开房间**；非房主附言 **等待房主重开…** |
+| 重开失败 | 遮罩内红色 `phase-overlay__error`（同时可能顶栏 toast） | — |
+
+**重开客户端校验（`restartGame()`）：** 仅房主可重开 / 未连接 / 对局尚未结束 / 对手已离开 / 重开失败请重试
 
 默认 `opponentName` 回退：**对手**
 
 ---
 
-### 1.2 规则说明 `RulesSheet.svelte`（大厅 / 游戏内均可打开）
+### 1.3 离席通知卡（`PartnerLeftOverlay.svelte`）
+
+> **非 error toast**；约 **3.2s** 自动消失（底部进度条）。对局中离席展示离席前双方 `totalScore`。
+
+| 场景 | 标题 | 副标题 | 底部提示 |
+|------|------|--------|----------|
+| 客人离开（房主视角） | 对手已离席 | `{name} 离开了酒馆`；对局中加「本局已结束」 | 牌桌回到等待状态… |
+| 房主离开（客人视角） | 房主已离席 | `{name} 离开了酒馆，牌桌已解散`（对局中为「本局已结束」） | 即将返回主菜单…（结束后自动 `onLeave`） |
+
+比分区标签：你（房主）/ 你；对手 / 房主 · `{name}`
+
+---
+
+### 1.4 规则说明 `RulesSheet.svelte`（大厅 / 游戏内均可打开）
 
 | 元素 | 文案 |
 |------|------|
@@ -44,7 +71,7 @@
 
 ---
 
-### 1.3 设置 `SettingsPanel.svelte`
+### 1.5 设置 `SettingsPanel.svelte`
 
 | 元素 | 文案 |
 |------|------|
@@ -55,7 +82,7 @@
 
 ---
 
-### 1.4 骰子图鉴 `DiceCollectionPanel.svelte`
+### 1.6 骰子图鉴 `DiceCollectionPanel.svelte`
 
 | 元素 | 文案 |
 |------|------|
@@ -115,14 +142,22 @@
 
 来源：`gameSession.svelte.ts`（客户端）+ Worker `session.ts`（经 WS 下发，原文展示）
 
+> **层级：** `.toast` z-index **2100**（高于 `PhaseOverlay` 胜负遮罩 1600）。**对手离席不走此通道**，见 §1.3。
+
 ### 3.1 客户端固定
 
 | 文案 | 触发 |
 |------|------|
 | 连接已断开 | WS onClose |
+| 连接已断开，回到页面将自动重连 | 对局中意外断线 |
 | 昵称不能为空 | connect 前校验 |
 | 房间号不能为空 | connect 前校验 |
 | 无法连接服务器 | connect 失败 |
+| 仅房主可重开 | `restartGame()` |
+| 未连接，无法重开 | `restartGame()` |
+| 对局尚未结束 | `restartGame()` |
+| 对手已离开，无法重开 | `restartGame()` |
+| 重开失败，请重试 | `restartGame()` send 失败 |
 
 ### 3.2 服务端 `worker/src/session.ts`
 
@@ -248,20 +283,22 @@
 | 场景 | 文案 |
 |------|------|
 | 等待对手 | 等待 {opponentWaitName} 掷骰… |
+| 对手暂离 | 对手暂离中…（`opponentAway`） |
 | 对手选骰中 | 等待 {opponentWaitName} 选骰… |
 | 首掷（仅 `rollCount===0`） | 开骰 / 掷骰 |
-| 掷后两钮 | 继续·计分并继续投（保留选中骰并自动掷剩余）/ 结束·计分并结束（保留选中骰并收分换手）；有本轮分时可无选中直接结束 |
+| 掷后两钮 | 继续·计分并继续投 / 结束·计分并结束 |
 | 选骰等待 | 来自 `dicePickWaitText` |
 | 大厅等待 | 来自 `lobbyWaitText`（见 §7） |
 
 ### 6.4 骰盘 `DiceBoard.svelte`
 
-| 文案 |
+| 文案 / 展示 |
 |------|
 | 已保留 |
 | 命运旋转中… |
 | 等待掷骰… |
 | 六枚全胜 · 点击掷骰 |
+| 首掷背面 | `rollCount===0 && turnScore===0`：各骰 `face-hidden`（主题 icon）；进 `selecting` 后须见 6 枚，勿被 `physicsRolling` 长期 `hidden` |
 | 对手点选 | 虚线高亮（`pendingSelection` → `remoteSelectedIds`） |
 
 ### 6.5 回合分 / 掷骰次数
@@ -269,11 +306,9 @@
 | 组件 | 文案 |
 |------|------|
 | TurnScoreCard | 本轮累计（选中预览 `+N`）/ 当前回合累积（已确认 `turnScore`） |
-| ~~ThrowPips~~ | 已从 UI 移除（`rollCount` 仍由服务端维护） |
 | DiceTable 提示 | 点击骰子区域即可重新摇骰（己方回合且可掷时） |
 | DiceTable 标题 | 摇出骰子 |
 | ActionBar | 掷骰（首掷）/ 计分并继续投 / 计分并结束 |
-| ~~ScoreRulesPanel~~ | 已从对局页移除；得分表见 `RulesSheet` |
 
 ### 6.6 组合横幅 `ComboBanner`（全屏非 modal，`scoringLabels.ts`）
 
@@ -292,6 +327,18 @@
 |------|
 | 正在推门进入… |
 | 无法连接房间 |
+
+### 6.8 金币定先后 `CoinFlipOverlay.svelte`
+
+> **时机：** 无特殊骰 → 开局后立刻 `turn_order`。有特殊骰 → **双方选骰完成后**再进入 `turn_order`，然后 `ackTurnOrder` 进入对局。
+
+| 元素 | 文案 |
+|------|------|
+| 眉题 | 金币一掷 |
+| 标题 | 定先后手 |
+| 旋转中 | 金币飞旋中… |
+| 结果 | `{firstPlayerName}` 掷得先手 |
+| 底栏等待 | 金币一掷定先后…（`ActionBar`，`inTurnOrder`） |
 
 ---
 
@@ -324,17 +371,18 @@
 | `reroll` | 己方 `rollCount` 增加 |
 | `big_score` | 选中预览 ≥1000 或单次 keep 增量 ≥1000 |
 | `bust` | `phase === bust` |
-| `win` / `lose` | `phase === game_over` |
+| `win` / `lose` | `phase === game_over`（**每局仅触发一次**，`shownGameOverQuote` 防重复） |
 | `combo` | 检测到三连等组合 |
 | `idle` | 己方 `selecting` 回合 20s 无操作 |
 
-改台词：编辑 `tavernQuotes.ts` 中 `TAVERN_QUOTES`（勿改 plan 附件）。
+改台词：编辑 `tavernQuotes.ts` 中 `TAVERN_QUOTES`。
 
 ### 8.1 特殊骰标注
 
 | 元素 | 文案 |
 |------|------|
 | 展示 | `DiceBoard.svelte`：非 `NormalDie` 的骰子下方显示 `shortName`（分类色） |
+| 动画时 | GSAP / CSS 掷骰动画期间**不显示** `shortName`（`hideActiveLabels`） |
 | 语录样式 | `TavernQuoteBar`：半透明对话框，非羊皮纸底 |
 
 ---
@@ -353,15 +401,20 @@
 
 | 改什么 | 文件 |
 |--------|------|
-| 爆点 / 胜负 / Hot Dice 遮罩 | `src/components/game/PhaseOverlay.svelte` |
+| 爆点 / 换手 / Hot Dice toast | `src/components/game/PhaseOverlay.svelte` |
+| 终局结算 / 重开 | `src/components/game/PhaseOverlay.svelte` |
+| 离席通知卡 | `src/components/game/PartnerLeftOverlay.svelte` + `gameSession.svelte.ts`（`partnerLeftNotice`） |
+| 离开房间导航 | `src/App.svelte`（`handleLeaveRoom` SPA）+ `gameSession.leaveRoom` |
 | 规则弹窗 | `src/components/lobby/RulesSheet.svelte` + `JoinForm` 内嵌 |
 | 设置弹窗 | `src/components/lobby/SettingsPanel.svelte` |
 | 收藏弹窗 | `src/components/lobby/DiceCollectionPanel.svelte` |
 | 规则配置卡片 | `src/components/lobby/RulesConfigPanel.svelte` |
-| 红色 Toast | `src/lib/client/gameSession.svelte.ts` + `worker/src/session.ts` |
+| 红色 Toast | `src/lib/client/gameSession.svelte.ts` + `worker/src/session.ts` + `src/app.css`（z-index） |
 | 选骰页 | `src/components/selection/DiceSelector.svelte` |
 | 底栏按钮 | `src/components/layout/ActionBar.svelte` |
 | 组合大字 | `src/lib/ui/scoringLabels.ts` |
-| 酒馆语录 | `src/lib/ui/tavernQuotes.ts` + `TavernQuoteBar.svelte` |
+| 酒馆语录 | `src/lib/ui/tavernQuotes.ts` + `TavernQuoteBar.svelte` + `useTavernQuote.svelte.ts` |
+| 金币定先后 | `src/components/game/CoinFlipOverlay.svelte` |
 | 特殊骰下方标注 | `DiceBoard.svelte` |
+| 首掷背面 / 掷骰动画 | `GameView.svelte`（`prevRollCount` / `physicsRolling`）+ `DiceBoard.svelte` + `DicePiece.svelte` |
 | 对局规则弹窗 | `DiceTable`「规则」→ `RulesSheet.svelte` |

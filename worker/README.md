@@ -30,6 +30,8 @@ wss://farkle.yixr.uno/room/{ROOM_ID}
 { "type": "roll" }
 { "type": "keep", "dieIds": [0, 2] }
 { "type": "bank" }
+{ "type": "leave" }
+{ "type": "ackTurnOrder" }
 ```
 
 **服务器 → 客户端**
@@ -38,6 +40,13 @@ wss://farkle.yixr.uno/room/{ROOM_ID}
 { "type": "state", "state": { ...GameState }, "you": "host" }
 { "type": "error", "message": "还没轮到你" }
 ```
+
+**行为摘要（与前端对齐，详见 [Memory.md §1.8](../Memory.md)）：**
+
+- `leave`：清空该玩家座位，`phase` 回 `lobby` 并广播；对方客户端展示离席通知卡（非 error）
+- 意外断线：`awayUntil` 宽限 2 分钟，到期后同 `leave`
+- `bank` 达标：`phase: game_over`，`winner` 设置，并附带 `lastTurnEnd`（决胜收分快照）
+- `start`：可从 `lobby` 或 `game_over` 重开 → `turn_order`（无特殊骰）或 `dice_selection`（有特殊骰）；双方选骰后再 `turn_order` + 金币定先后；`ackTurnOrder` 进入 `selecting` 时 `buildDiceForPlayer` 下发 6 枚骰（`rollCount: 0`），前端首掷前显示 `face-hidden` 背面
 
 ## 浏览器快速测试
 

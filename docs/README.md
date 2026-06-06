@@ -23,7 +23,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [ui-copy-catalog.md](./ui-copy-catalog.md) | 弹窗、Toast、提示文案清单 |
+| [ui-copy-catalog.md](./ui-copy-catalog.md) | 弹窗、Toast、终局结算、离席通知文案清单 |
 | [kcd2-farkle/README.md](./kcd2-farkle/README.md) | 设计系统入口 |
 | [kcd2-farkle/DESIGN.md](./kcd2-farkle/DESIGN.md) | v2 视觉规范与 token |
 | [kcd2-farkle/UI-REVIEW.md](./kcd2-farkle/UI-REVIEW.md) | 线框与评审清单 |

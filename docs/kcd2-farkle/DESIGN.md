@@ -46,7 +46,9 @@
 | `src/components/game/DiceBoard.svelte` | `physicsRolling` 时测量槽位并驱动动画 |
 | `src/lib/settings/gameSettings.ts` | `physicsEnabled`（文案「掷骰飞散动画」）；`prefers-reduced-motion` 强制关闭 |
 
-- 触发：`GameView` 在**己方回合**且 `rollCount` 增加时设 `physicsRolling`（Worker 无 `rolling` phase）
+- 触发：`GameView` 在**己方回合**且 `prevRollCount >= 0 && rollCount` 递增时设 `physicsRolling`（Worker 无 `rolling` phase；`prevRollCount` 初值 `-1`，避免进局/重连误触发）
+- 首掷占位：`rollCount===0 && turnScore===0` → `DicePiece` 显示 `face-hidden`；进 `selecting` 须见 6 枚背面，勿长期 `physicsRolling` 隐藏 DOM
+- 动画期间：`DiceBoard` 隐藏活动区 `shortName`（克隆 overlay 飞散时字不留在槽位）
 - 降级：设置关闭 / 减少动态效果 → CSS `medievalRoll`（`DicePiece`）
 - **已移除：** Pixi 8 + Matter.js、`DicePhysicsStage`、`createDicePhysics.ts`（2026-06-04 起由 GSAP 方案替代）
 
@@ -348,9 +350,12 @@ LobbyView → MainMenu / JoinForm / RulesSheet / SettingsPanel / DiceCollectionP
 
 ### 4.8 遮罩与 Toast
 
-- **Phase 遮罩**（bust / hot_dice / game_over）：`rgba(44, 24, 16, 0.75)` 全屏
-- **Toast / error**：顶栏下 slide-down，danger 或 wine 左边框
-- 不用 modal 堆 modal
+- **Phase toast**（bust / turn_end / hot_dice）：居中紧凑卡片，`pointer-events: none`，z-index 1500
+- **终局结算卡**（`game_over`）：全屏深色渐变 + 金标题；含决胜一击区与双方终局比分；z-index 1600
+- **离席通知卡**（`PartnerLeftOverlay`）：半透明遮罩 + 中性卡片；~3.2s 自动消失；z-index 1550
+- **金币定先后**（`CoinFlipOverlay`）：z-index 1700（高于胜负遮罩，重开后不挡金币动画）
+- **Toast / error**：顶栏下 slide-down，z-index **2100**（高于胜负遮罩）
+- 对手离席**不用** error toast；不用 modal 堆 modal
 
 ---
 
@@ -433,7 +438,8 @@ URL 示例：`https://farkle.yixr.uno/room/ABC123?name=亨利`（query 预填，
 
 - `dice_selection`：双栏 DiceCard 网格，参考旧 `DiceSelector`
 - `rps`：三按钮 + 等待对手
-- `game_over`：serif 胜利者 + 再来一局
+- `game_over`：终局结算卡（胜负 + 决胜一击 `lastTurnEnd` + 双方比分）+ 离开 / 再来一局
+- 离席：`PartnerLeftOverlay` 自动消失；主动离开 SPA 回大厅（无整页刷新）
 
 ---
 
@@ -521,3 +527,4 @@ URL 示例：`https://farkle.yixr.uno/room/ABC123?name=亨利`（query 预填，
 | 2026-06-03 | v2 | 深色沉浸、组件落地；效果图归档为 `ui-reference-mockup.png` |
 | 2026-06-03 | v2.1 | SVG 骰面 + Pixi/Matter 掷骰（已由 v2.2 替代） |
 | 2026-06-04 | v2.2 | 36 套主题骰 SVG（`diceThemes.json`）；GSAP 四段掷骰；首掷 `face-hidden` |
+| 2026-06-06 | v2.3 | `physicsRolling` 触发守卫（`prevRollCount`）；掷骰动画期间隐藏 `shortName` |
