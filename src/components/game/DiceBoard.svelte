@@ -51,6 +51,7 @@
   let activeDice = $derived(dice.filter((d) => !d.kept));
   let hotDiceReady = $derived(turnScore > 0 && rollCount === 0 && activeDice.length > 0);
   let cssRolling = $derived(rolling && !physicsRolling);
+  let hideActiveLabels = $derived(physicsRolling || cssRolling);
 
   /** 随 physicsRolling + rollCount + activeWrapEl 触发；骰面列表用 untrack 避免中途 kill */
   $effect(() => {
@@ -154,7 +155,7 @@
             remoteSelected={remoteSelectedIds.includes(die.id)}
             onclick={onToggle ? () => onToggle(die.id) : undefined}
           />
-          {#if label}
+          {#if label && !hideActiveLabels}
             <span class="dice-board__label" style:--label-color={labelColor(die.type)}>{label}</span>
           {/if}
         </div>

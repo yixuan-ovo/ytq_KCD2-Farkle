@@ -113,7 +113,13 @@
     const s = session.state;
     if (!s) return;
     const phase = s.phase;
-    if (phase === 'bust' || phase === 'turn_end' || phase === 'hot_dice' || (s.lastBust && s.rollCount === 0)) {
+    if (
+      phase === 'bust' ||
+      phase === 'turn_end' ||
+      phase === 'hot_dice' ||
+      (phase === 'selecting' && s.rollCount === 0) ||
+      (s.lastBust && s.rollCount === 0)
+    ) {
       physicsRolling = false;
       prevRollCount = s.rollCount;
     }
@@ -124,7 +130,8 @@
     const s = session.state;
     if (!s || !physicsEnabled) return;
     const rc = s.rollCount;
-    if (rc > prevRollCount) {
+    // prevRollCount 初值为 -1；仅在实际掷骰递增时开物理动画，避免进局/重连误触发
+    if (prevRollCount >= 0 && rc > prevRollCount) {
       if (getIsMyTurn()) {
         physicsRolling = true;
         if (rc > 1) gameQuotes.show('reroll');
