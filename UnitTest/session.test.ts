@@ -29,12 +29,22 @@ function lobbyWithBothPlayers(): GameState {
   };
 }
 
+const HOST_PICKS = ['ArankaDie', 'LuckyDie1'] as const;
+const GUEST_PICKS = ['DevilDie', 'OddDie'] as const;
+
 /** 测试用：金币定先后后强制房主先手，避免随机先后影响断言 */
 function startGameHostFirst(
   state: GameState,
   config?: Parameters<typeof startGame>[2],
 ): GameState {
   let started = startGame(state, 'host', config) as GameState;
+  const n = started.config.specialDiceCount;
+
+  if (n > 0) {
+    started = submitDicePick(started, 'host', [...HOST_PICKS].slice(0, n)) as GameState;
+    started = submitDicePick(started, 'guest', [...GUEST_PICKS].slice(0, n)) as GameState;
+  }
+
   started = {
     ...started,
     currentPlayerIndex: 0,
@@ -266,16 +276,14 @@ describe('startGame restart', () => {
 });
 
 describe('startGame with config', () => {
-  it('enters turn_order then dice_selection when specialDiceCount > 0', () => {
+  it('enters dice_selection directly when specialDiceCount > 0', () => {
     const result = startGame(lobbyWithBothPlayers(), 'host', { specialDiceCount: 2, targetScore: 4000 });
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(result.phase).toBe('turn_order');
-    expect(result.coinFlip?.firstPlayer).toMatch(/^(host|guest)$/);
-    const next = finishTurnOrder(result, 'host') as GameState;
-    expect(next.phase).toBe('dice_selection');
-    expect(next.config.specialDiceCount).toBe(2);
-    expect(next.hostDice).toEqual([]);
+    expect(result.phase).toBe('dice_selection');
+    expect(result.coinFlip).toBeNull();
+    expect(result.config.specialDiceCount).toBe(2);
+    expect(result.hostDice).toEqual([]);
   });
 
   it('enters turn_order then selecting when specialDiceCount is 0', () => {
@@ -312,19 +320,29 @@ describe('turn order coin flip', () => {
 
 describe('submitDicePick', () => {
   function inDiceSelection(): GameState {
-    return startGameHostFirst(lobbyWithBothPlayers(), { specialDiceCount: 2 });
+    return startGame(lobbyWithBothPlayers(), 'host', { specialDiceCount: 2 }) as GameState;
   }
 
-  it('starts game when both players pick', () => {
+  it('enters turn_order when both players pick, then host ack starts selecting', () => {
     let state = inDiceSelection();
     state = submitDicePick(state, 'host', ['ArankaDie', 'LuckyDie1']) as GameState;
     expect(state.phase).toBe('dice_selection');
     state = submitDicePick(state, 'guest', ['DevilDie', 'OddDie']) as GameState;
-    expect(state.phase).toBe('selecting');
-    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.phase).toBe('turn_order');
+    expect(state.coinFlip?.firstPlayer).toMatch(/^(host|guest)$/);
     expect(state.hostDice).toEqual(['ArankaDie', 'LuckyDie1']);
     expect(state.guestDice).toEqual(['DevilDie', 'OddDie']);
-    expect(state.dice.some((d) => d.type === 'ArankaDie')).toBe(true);
+
+    state = {
+      ...state,
+      currentPlayerIndex: 0,
+      coinFlip: { firstPlayer: 'host', heads: true },
+    };
+    const playing = finishTurnOrder(state, 'host') as GameState;
+    expect(playing.phase).toBe('selecting');
+    expect(playing.coinFlip).toBeNull();
+    expect(playing.currentPlayerIndex).toBe(0);
+    expect(playing.dice.some((d) => d.type === 'ArankaDie')).toBe(true);
   });
 
   it('rejects normal category dice', () => {

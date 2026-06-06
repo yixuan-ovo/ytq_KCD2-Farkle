@@ -140,6 +140,14 @@ export function startGame(
     ] as GameState['players'],
   };
 
+  if (mergedConfig.specialDiceCount > 0) {
+    return {
+      ...base,
+      phase: 'dice_selection',
+      dice: createDice([]),
+    };
+  }
+
   const firstIndex = (randomSeed() % 2) as 0 | 1;
   const firstPlayer = state.players[firstIndex].id;
   const heads = randomSeed() % 2 === 0;
@@ -162,10 +170,6 @@ export function finishTurnOrder(
 
   const firstPlayer = state.players[state.currentPlayerIndex].id;
   const base: GameState = { ...state, coinFlip: null };
-
-  if (state.config.specialDiceCount > 0) {
-    return { ...base, phase: 'dice_selection', dice: createDice([]) };
-  }
 
   return {
     ...base,
@@ -203,14 +207,15 @@ export function submitDicePick(
   };
 
   if (next.hostDice.length >= n && next.guestDice.length >= n) {
-    const firstPlayer = next.players[next.currentPlayerIndex].id;
+    const firstIndex = (randomSeed() % 2) as 0 | 1;
+    const firstPlayer = next.players[firstIndex].id;
+    const heads = randomSeed() % 2 === 0;
     return {
       ...next,
-      phase: 'selecting',
-      dice: buildDiceForPlayer(next, firstPlayer),
-      turnScore: 0,
-      rollCount: 0,
-      awaitingKeep: false,
+      phase: 'turn_order',
+      currentPlayerIndex: firstIndex,
+      coinFlip: { firstPlayer, heads },
+      dice: createDice([]),
     };
   }
 
