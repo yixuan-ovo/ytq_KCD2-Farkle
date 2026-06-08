@@ -15,7 +15,7 @@
 | 主 CTA | 酒红 pill | 烫金描边 `.btn-gilded` |
 | 计分 | gold 仅数字 | gold 数字 + 羊皮纸 `panel-parchment` |
 | 选中骰子 | wine 描边 | 上浮 12px + 金/蓝光晕 |
-| 字体 | 系统衬线 | Cinzel Decorative + Noto Serif SC + JetBrains Mono |
+| 字体 | 系统衬线 | Noto Sans SC + ZCOOL KuaiLe + Cinzel Decorative + JetBrains Mono（Google Fonts） |
 
 参考效果图：[`ui-reference-mockup.png`](./ui-reference-mockup.png)（原外部设计稿，已归档至本目录）。
 
@@ -221,20 +221,27 @@ LobbyView → MainMenu / JoinForm / RulesSheet / SettingsPanel / DiceCollectionP
 
 ## 3. 字体与排版
 
-### 3.1 字体栈
+### 3.1 字体栈（实现见 `src/app.css` + `index.html`）
 
 ```css
 :root {
-  --font-sans:  "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Georgia, "Noto Serif SC", serif;
-  /* Phase 2: 可引入 Cinzel（Google Fonts）仅用于英文装饰标题 */
+  --font-sans:    "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display: "ZCOOL KuaiLe", "Cinzel Decorative", "Noto Sans SC", sans-serif;
+  --font-serif:   "Cinzel Decorative", "ZCOOL KuaiLe", "Noto Sans SC", serif;
+  --font-caption: "Noto Sans SC", sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
 }
 ```
 
-| 角色 | 字体 | 用途 |
+| 角色 | 变量 | 用途 |
 |------|------|------|
-| Tavern Sans | `--font-sans` | 按钮、分数数字、昵称、说明 |
-| Tavern Serif | `--font-serif` | 页面标题「骰子酒馆」、胜利、规则章节 |
+| 正文 | `--font-sans` | 全局正文、说明、表单 |
+| 展示标题 | `--font-display` | 「亨利的骰桌」、菜单按钮标题、顶栏馆名 |
+| 装饰标题 | `--font-serif` | 英文 FARKLE、阶段 overlay 标题（中文落快乐体） |
+| 副标题 | `--font-caption` | 主菜单年代副标题 |
+| 等宽 | `--font-mono` | 房间号、分数数字 |
+
+**加载：** `index.html` 链 Google Fonts。国内网络可能 fallback 系统黑体；生产环境以部署后实机为准，可选自托管 `public/fonts/`。
 
 **原则（来自 Starbucks）：**
 
@@ -528,3 +535,4 @@ URL 示例：`https://farkle.yixr.uno/room/ABC123?name=亨利`（query 预填，
 | 2026-06-03 | v2.1 | SVG 骰面 + Pixi/Matter 掷骰（已由 v2.2 替代） |
 | 2026-06-04 | v2.2 | 36 套主题骰 SVG（`diceThemes.json`）；GSAP 四段掷骰；首掷 `face-hidden` |
 | 2026-06-06 | v2.3 | `physicsRolling` 触发守卫（`prevRollCount`）；掷骰动画期间隐藏 `shortName` |
+| 2026-06-06 | v2.4 | 快乐体展示字 + `OrnamentalDivider`；图鉴手机抽屉；对手选分/选骰摘要 |

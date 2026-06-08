@@ -172,12 +172,12 @@ flowchart TD
 
 ### 4.5 设置规则（房主）
 
-**组件：** `RulesConfigPanel` — 目标分、特殊骰数量 0–3、「确认规则，开始游戏」
+**组件：** `RulesConfigPanel` — 目标分、特殊骰数量 0–3、「确认规则，开始游戏」；提交后 **正在开局…** 保持面板直至 `phase` 离开 `lobby`（防闪回牌桌等待）
 
 ### 4.6 选特殊骰
 
 **阶段：** `dice_selection`  
-**组件：** `DiceSelector`、`DiceCard`（六面缩略图 + 权重色）
+**组件：** `DiceSelector`、`DiceCard`（六面缩略图 + 权重色）、`DicePickSummary`（己方/对手已选横向摘要）
 
 ```text
 ┌─────────────────────────────────────┐

@@ -13,6 +13,6 @@
 - **骰子主题库：** [../dice/骰子模板.md](../dice/骰子模板.md)（`diceThemes.json` + `yarn dice:generate`）
 - **文档索引：** [../README.md](../README.md)
 
-**UI 现状摘要：** 主菜单全宽「进入酒馆」+ 双列图鉴/规则 + 设置；对局 HUD 固定 JPG 头像；回合分双羊皮纸卡；对局骰子按类型加载主题 SVG；首掷前 6 枚 `face-hidden` 背面；有特殊骰时先选骰再金币定先后；`game_over` 终局结算卡；离席 `PartnerLeftOverlay`；离开房间 SPA 回大厅（无硬刷新）。
+**UI 现状摘要：** 主菜单「亨利的骰桌」+ `OrnamentalDivider` + 快乐体展示字；全宽「进入酒馆」+ 双列图鉴/规则；图鉴手机底部抽屉；对局 HUD + 双计分卡（含对手选分）；选骰 `DicePickSummary`；字体 Google Fonts（见 DESIGN §3.1）；`game_over` 终局结算卡；离席 `PartnerLeftOverlay`。
 
 **线框（ASCII）：** 以 [UI-REVIEW.md §4](./UI-REVIEW.md#4-界面线框) 为评审线框；[DESIGN.md §5](./DESIGN.md#5-页面线框信息架构) 为 IA；实施细节见 [Memory.md §3.5](../../Memory.md)。

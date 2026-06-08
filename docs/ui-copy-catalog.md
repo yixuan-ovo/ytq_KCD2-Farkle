@@ -1,7 +1,7 @@
 # UI 文案清单（弹窗 / 遮罩 / Toast / 提示）
 
 > 改措辞时按本表定位源码文件。动态插值用 `{变量}` 表示。  
-> 最后核对：2026-06-06
+> 最后核对：2026-06-06（移动端 UX · 字体 · 选骰摘要）
 
 ---
 
@@ -87,10 +87,11 @@
 | 元素 | 文案 |
 |------|------|
 | 标题 | 骰子图鉴 |
-| 副标题 | 共 N 种 · 数据与选骰页一致 |
-| Tab | 全部 / 普通 / 幸运 / 邪恶 / 神圣 / 诡计 / 特殊（`CATEGORY_LABELS`） |
+| 副标题 | 共 N 种 · 点击骰子查看详情 |
+| Tab | 全部 / 普通 / 幸运 / 邪恶 / 神圣 / 诡计 / 特殊（横滑） |
 | 图例 | 与 `DiceWeightLegend`、选骰页相同 |
-| 详情 | 缩写、分类、恶魔百搭说明（若有）、选骰提示 |
+| 列表 | 手机双列紧凑 `DiceCard`；桌面多列 |
+| 详情 | 手机底部抽屉（收起钮）；桌面右侧 sticky；缩写、分类、恶魔百搭、风味描述 |
 | 数据 | `diceRegistry` + `DiceCard` + `weightTiers` |
 
 ---
@@ -107,7 +108,7 @@
 | 字段 | 特殊骰子数量 |
 | 分段选项 | 不使用 / 1 / 2 / 3 |
 | 提示 | 每人可选择的特殊骰子上限 |
-| 确认按钮 | 确认规则，开始游戏 |
+| 确认按钮 | 确认规则，开始游戏 / 正在开局…（`starting`） |
 | 校验错误 | 见 §5.2 `validateConfig` |
 
 ---
@@ -203,7 +204,8 @@
 
 | 元素 | 文案 |
 |------|------|
-| 标题 | 骰子酒馆 |
+| 标题 | 亨利的骰桌（`--font-display` 快乐体） |
+| 装饰 | `OrnamentalDivider`（✦ 烫金分隔） |
 | 副标题 | 天国拯救2 · 特罗斯基，1403年 |
 | 主按钮 | 进入酒馆 — 副：开始你的骰子对决 |
 | 左瓦片 | 骰子图鉴 — 副：查看所有骰子组合 |
@@ -246,13 +248,14 @@
 | 元素 | 文案 |
 |------|------|
 | 标题 | 选择特殊骰子 |
-| 说明 | 请选择 {specialCount} 枚（对手不可见） |
+| 说明 | 请选择 {specialCount} 枚 · 六面概率见各卡百分比 |
 | 图例 | 高概率 / 常态 / 低概率 / 无法掷出 |
 | 状态 | 已选 {n} / {N} · 已确认 / ：未选择 |
 | 分类标题 | 幸运 / 邪恶 / 神圣 / 诡计 / 特殊（`CATEGORY_LABELS`） |
 | 确认按钮 | 确认选择（{n}/{N}） |
 | 提交中 | 提交中… |
 | 等待 | 等待对手选骰… / 双方选骰完成，即将开始…（`getDicePickWaitText`） |
+| 选骰摘要 | `DicePickSummary`：你的选择 / 对手已选（己方确认后且对手已提交可见） |
 | 卡片标签 | 各骰 `category` 中文（`DiceCard` tag） |
 | 面 tooltip | `点数 {face}：无法掷出` / `点数 {face}：约 {pct}%` |
 
@@ -305,7 +308,7 @@
 
 | 组件 | 文案 |
 |------|------|
-| TurnScoreCard | 本轮累计（选中预览 `+N`）/ 当前回合累积（已确认 `turnScore`） |
+| TurnScoreCard | 本轮累计（己方预览 `+N`）/ **对手选分**（对手 `pendingSelection` 预览）/ 当前回合累积（`turnScore`） |
 | DiceTable 提示 | 点击骰子区域即可重新摇骰（己方回合且可掷时） |
 | DiceTable 标题 | 摇出骰子 |
 | ActionBar | 掷骰（首掷）/ 计分并继续投 / 计分并结束 |
@@ -418,3 +421,8 @@
 | 特殊骰下方标注 | `DiceBoard.svelte` |
 | 首掷背面 / 掷骰动画 | `GameView.svelte`（`prevRollCount` / `physicsRolling`）+ `DiceBoard.svelte` + `DicePiece.svelte` |
 | 对局规则弹窗 | `DiceTable`「规则」→ `RulesSheet.svelte` |
+| 全局字体 | `index.html`（Google Fonts）+ `src/app.css`（`--font-*`） |
+| 主菜单装饰分隔 | `OrnamentalDivider.svelte` + `MainMenu.svelte` |
+| 选骰摘要 | `DicePickSummary.svelte` + `messages.ts`（对手骰下发） |
+| 对手选分预览 | `gameSession.getRemoteSelectionPreview` + `TurnScoreCard.svelte` |
+| 确认规则防闪屏 | `GameView.startPending` + `RulesConfigPanel.starting` |
