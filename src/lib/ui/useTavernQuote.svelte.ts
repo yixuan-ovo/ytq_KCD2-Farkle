@@ -51,7 +51,6 @@ export function createGameQuoteController() {
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let gameStartShown = false;
   let lastBigScorePreview = false;
-  let prevPhase: string | null = null;
   let lastBustQuoteKey = '';
   let shownGameOverQuote = false;
 
@@ -76,7 +75,6 @@ export function createGameQuoteController() {
     idleTimer = null;
     gameStartShown = false;
     lastBigScorePreview = false;
-    prevPhase = null;
     lastBustQuoteKey = '';
     shownGameOverQuote = false;
     quote = null;
@@ -101,7 +99,6 @@ export function createGameQuoteController() {
       gameStartShown = true;
       show('game_start');
     }
-    prevPhase = p;
   }
 
   function handlePreview(preview: number, isMyTurn: boolean): void {

@@ -183,9 +183,7 @@
       return;
     }
 
-    if (phase !== 'game_over') {
-      restartSending = false;
-    }
+    restartSending = false;
     if (phase === 'lobby' || phase === 'turn_order') {
       dismissedKey = '';
       if (dismissTimer) clearTimeout(dismissTimer);

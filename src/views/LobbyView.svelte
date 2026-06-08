@@ -17,7 +17,12 @@
 
   type LobbyScreen = 'menu' | 'play' | 'rules' | 'settings' | 'collection';
 
-  let screen = $state<LobbyScreen>(initialRoomId ? 'play' : 'menu');
+  let joinByInvite = $derived(!!initialRoomId);
+  let screen = $state<LobbyScreen>('menu');
+
+  $effect.pre(() => {
+    if (joinByInvite) screen = 'play';
+  });
 
   function handleEnter(roomId: string, name: string): void {
     onEnterRoom?.(roomId, name);
@@ -40,7 +45,7 @@
         />
       {:else if screen === 'play'}
         <div class="lobby__play">
-          {#if !initialRoomId}
+          {#if !joinByInvite}
             <button type="button" class="lobby__back btn btn-secondary" onclick={() => (screen = 'menu')}>
               ← 返回主菜单
             </button>
@@ -62,13 +67,13 @@
   </div>
 
   {#if screen === 'rules'}
-    <RulesSheet onClose={() => (screen = initialRoomId ? 'play' : 'menu')} />
+    <RulesSheet onClose={() => (screen = joinByInvite ? 'play' : 'menu')} />
   {/if}
   {#if screen === 'settings'}
-    <SettingsPanel onClose={() => (screen = initialRoomId ? 'play' : 'menu')} />
+    <SettingsPanel onClose={() => (screen = joinByInvite ? 'play' : 'menu')} />
   {/if}
   {#if screen === 'collection'}
-    <DiceCollectionPanel onClose={() => (screen = initialRoomId ? 'play' : 'menu')} />
+    <DiceCollectionPanel onClose={() => (screen = joinByInvite ? 'play' : 'menu')} />
   {/if}
 </div>
 

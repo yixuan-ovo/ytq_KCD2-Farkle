@@ -133,17 +133,6 @@
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
   }
 
-  .dice-piece__glyph {
-    font-family: var(--font-serif);
-    font-size: clamp(1.1rem, 4.5vw, 1.45rem);
-    font-weight: 700;
-    line-height: 1;
-    color: var(--color-gold-bright);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-    user-select: none;
-  }
-
   .dice-piece--placeholder .dice-piece__body {
     background: transparent;
     border-color: transparent;

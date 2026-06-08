@@ -1,3 +1,5 @@
+<script lang="ts"></script>
+
 <ul class="dice-weight-legend" aria-label="六面概率图例">
   <li><span class="dice-weight-legend__swatch dice-weight-legend__swatch--boost"></span>高概率</li>
   <li><span class="dice-weight-legend__swatch dice-weight-legend__swatch--normal"></span>常态</li>

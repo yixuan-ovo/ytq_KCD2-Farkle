@@ -332,11 +332,4 @@
   .codex__detail-desc p:last-child {
     margin-bottom: 0;
   }
-
-  .codex__detail-footnote {
-    font-size: 0.6875rem;
-    line-height: 1.45;
-    color: rgba(44, 24, 16, 0.5);
-    margin: 0;
-  }
 </style>
