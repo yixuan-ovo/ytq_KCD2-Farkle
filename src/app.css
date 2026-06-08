@@ -93,8 +93,11 @@
   --button-active-scale: 0.95;
 
   /* ── 字体 ── */
-  --font-sans: "Noto Serif SC", "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", serif;
-  --font-serif: "Cinzel Decorative", "Noto Serif SC", Georgia, serif;
+  --font-sans: "Noto Sans SC", "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: "Cinzel Decorative", "ZCOOL KuaiLe", "Noto Sans SC", Georgia, serif;
+  /** 主标题 / 馆名：快乐体更活泼，拉丁仍走 Cinzel */
+  --font-display: "ZCOOL KuaiLe", "Cinzel Decorative", "Noto Sans SC", sans-serif;
+  --font-caption: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* ── 布局 ── */

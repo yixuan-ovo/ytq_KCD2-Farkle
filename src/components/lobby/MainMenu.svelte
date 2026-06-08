@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TavernQuoteBar from '../layout/TavernQuoteBar.svelte';
+  import OrnamentalDivider from '../layout/OrnamentalDivider.svelte';
   import { createMenuQuoteController } from '$lib/ui/useTavernQuote.svelte';
 
   interface Props {
@@ -29,6 +30,7 @@
   <div class="main-menu__header">
     <div class="main-menu__crown" aria-hidden="true">🎲</div>
     <h1 class="main-menu__title">亨利的骰桌</h1>
+    <OrnamentalDivider glyph="✦" />
     <p class="main-menu__subtitle">天国拯救2 · 特罗斯基，1403年</p>
   </div>
 
@@ -110,19 +112,25 @@
   }
 
   .main-menu__title {
-    font-family: var(--font-serif);
-    font-size: clamp(1.75rem, 6vw, 2.25rem);
-    font-weight: 700;
-    color: var(--color-gold-bright);
-    letter-spacing: 0.08em;
-    text-shadow: 0 0 24px rgba(212, 175, 55, 0.35);
-    margin-bottom: var(--space-2);
+    font-family: var(--font-display);
+    font-size: clamp(2.35rem, 10vw, 3.35rem);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    margin-bottom: 0;
+    color: #ffe9a8;
+    text-shadow:
+      0 2px 0 rgba(120, 72, 18, 0.55),
+      0 0 22px rgba(255, 210, 100, 0.45);
   }
 
   .main-menu__subtitle {
-    font-size: 0.8125rem;
-    color: var(--color-text-soft);
-    letter-spacing: 0.14em;
+    font-family: var(--font-caption);
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: rgba(245, 235, 210, 0.88);
+    letter-spacing: 0.05em;
+    margin-top: var(--space-1);
   }
 
   .main-menu__board {
@@ -291,9 +299,9 @@
   }
 
   .menu-btn__title {
-    font-family: var(--font-serif);
-    font-size: 1.0625rem;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 400;
     color: var(--color-gold-bright);
     letter-spacing: 0.06em;
     line-height: 1.25;

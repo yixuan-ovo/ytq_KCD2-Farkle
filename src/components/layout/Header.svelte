@@ -13,6 +13,7 @@
   <div class="header__brand">
     <span class="header__logo" aria-hidden="true">🍺</span>
     <span class="header__title">骰子酒馆</span>
+    <span class="header__title-en" aria-hidden="true">Farkle</span>
   </div>
   <div class="header__meta">
     {#if roomId}
@@ -69,17 +70,34 @@
   }
 
   .header__title {
-    font-family: var(--font-serif);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
     color: var(--color-gold-bright);
     white-space: nowrap;
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+  }
+
+  .header__title-en {
+    font-family: var(--font-serif);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(201, 168, 106, 0.65);
+    margin-left: 0.35rem;
+    align-self: flex-end;
+    margin-bottom: 0.15rem;
   }
 
   @media (min-width: 640px) {
     .header__title {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
+    }
+
+    .header__title-en {
+      font-size: 0.6875rem;
     }
   }
 
