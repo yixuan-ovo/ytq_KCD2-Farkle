@@ -359,7 +359,7 @@ describe('submitDicePick', () => {
 });
 
 describe('toClientGameState', () => {
-  it('hides opponent dice ids during selection', () => {
+  it('hides opponent dice until self has confirmed during selection', () => {
     const state: GameState = {
       ...createInitialState(),
       phase: 'dice_selection',
@@ -375,6 +375,24 @@ describe('toClientGameState', () => {
     const guestView = toClientGameState(state, 'guest');
     expect(guestView.guestDice).toEqual([]);
     expect(guestView.hostDice).toEqual([]);
+    expect(guestView.opponentDiceReady).toBe(true);
+  });
+
+  it('reveals opponent dice after self has confirmed', () => {
+    const state: GameState = {
+      ...createInitialState(),
+      phase: 'dice_selection',
+      config: { ...createInitialState().config, specialDiceCount: 2 },
+      hostDice: ['ArankaDie', 'LuckyDie1'],
+      guestDice: ['DevilDie', 'OddDie'],
+    };
+    const hostView = toClientGameState(state, 'host');
+    expect(hostView.hostDice).toEqual(['ArankaDie', 'LuckyDie1']);
+    expect(hostView.guestDice).toEqual(['DevilDie', 'OddDie']);
+
+    const guestView = toClientGameState(state, 'guest');
+    expect(guestView.guestDice).toEqual(['DevilDie', 'OddDie']);
+    expect(guestView.hostDice).toEqual(['ArankaDie', 'LuckyDie1']);
     expect(guestView.opponentDiceReady).toBe(true);
   });
 });

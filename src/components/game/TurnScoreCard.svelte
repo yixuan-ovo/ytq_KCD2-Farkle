@@ -2,14 +2,19 @@
   interface Props {
     score?: number;
     preview?: number;
+    /** 预览分归属：己方选骰 / 对手选骰 */
+    previewOwner?: 'you' | 'opponent';
   }
 
-  let { score = 0, preview = 0 }: Props = $props();
+  let { score = 0, preview = 0, previewOwner = 'you' }: Props = $props();
 
   let prevScore = $state(0);
   let pulsing = $state(false);
 
   let showPreview = $derived(preview > 0);
+  let previewLabel = $derived(
+    previewOwner === 'opponent' && showPreview ? '对手选分' : '本轮累计',
+  );
 
   $effect(() => {
     const s = score;
@@ -28,10 +33,11 @@
 <div class="turn-scores" data-turn-score-anchor>
   <div class="turn-score panel-parchment">
     <div class="turn-score__inner">
-      <span class="turn-score__label">本轮累计</span>
+      <span class="turn-score__label">{previewLabel}</span>
       <span
         class="turn-score__value"
         class:turn-score__value--preview={showPreview}
+        class:turn-score__value--opponent-preview={previewOwner === 'opponent' && showPreview}
       >
         {showPreview ? `+${preview}` : preview}
       </span>
@@ -106,6 +112,11 @@
   .turn-score__value--preview {
     color: #3d6a9e;
     text-shadow: 0 0 12px rgba(61, 106, 158, 0.35);
+  }
+
+  .turn-score__value--opponent-preview {
+    color: #9a7b4a;
+    text-shadow: 0 0 12px rgba(201, 168, 106, 0.35);
   }
 
   .turn-score__value--gold {

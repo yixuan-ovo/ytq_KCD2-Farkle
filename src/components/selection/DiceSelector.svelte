@@ -5,6 +5,7 @@
     type DieCategory,
   } from '$lib/game/diceRegistry';
   import DiceCard from './DiceCard.svelte';
+  import DicePickSummary from './DicePickSummary.svelte';
   import DiceWeightLegend from './DiceWeightLegend.svelte';
   import {
     session,
@@ -12,6 +13,7 @@
     submitDicePick,
     getDicePickWaitText,
     getIsPickPending,
+    getOpponentDicePicks,
   } from '$lib/client/gameSession.svelte';
 
   interface Props {
@@ -33,8 +35,10 @@
   let isSubmitting = $derived(getIsPickPending());
   let canSubmit = $derived(!isSubmitting && selectedIds.length === specialCount && specialCount > 0);
   let waitText = $derived(getDicePickWaitText());
+  let opponentPicks = $derived(getOpponentDicePicks());
 
   let displaySelected = $derived(hasConfirmed ? confirmedIds : selectedIds);
+  let summaryPicks = $derived(hasConfirmed ? confirmedIds : selectedIds);
 
   function isSelected(id: string): boolean {
     return displaySelected.includes(id);
@@ -55,7 +59,9 @@
 <div class="dice-selector">
   <header class="dice-selector__header">
     <h2 class="dice-selector__title">选择特殊骰子</h2>
-    <p class="dice-selector__hint">请选择 {specialCount} 枚（对手不可见）</p>
+    <p class="dice-selector__hint">
+      请选择 {specialCount} 枚 · 六面概率见各卡百分比
+    </p>
     <DiceWeightLegend />
     <div class="dice-selector__status">
       已选 {displaySelected.length} / {specialCount}
@@ -78,6 +84,7 @@
               <DiceCard
                 {die}
                 selected={isSelected(die.id)}
+                opponentPick={opponentPicks.includes(die.id)}
                 disabled={isDisabled(die.id)}
                 onclick={() => togglePickDie(die.id)}
               />
@@ -90,6 +97,10 @@
 
   {#if hasConfirmed}
     <footer class="dice-selector__footer">
+      <DicePickSummary title="你的选择" pickIds={summaryPicks} variant="yours" />
+      {#if opponentPicks.length > 0}
+        <DicePickSummary title="对手已选" pickIds={opponentPicks} variant="opponent" />
+      {/if}
       <p class="dice-selector__waiting" role="status">{waitText || '等待对手选骰…'}</p>
     </footer>
   {:else if isSubmitting}

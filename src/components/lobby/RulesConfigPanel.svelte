@@ -3,11 +3,12 @@
   import { validateConfig } from '$lib/game/rules';
 
   interface Props {
+    starting?: boolean;
     onConfirm?: (config: Pick<GameConfig, 'targetScore' | 'specialDiceCount'>) => void;
     onBack?: () => void;
   }
 
-  let { onConfirm, onBack }: Props = $props();
+  let { starting = false, onConfirm, onBack }: Props = $props();
 
   let targetScore = $state(DEFAULT_CONFIG.targetScore);
   let specialDiceCount = $state<0 | 1 | 2 | 3>(DEFAULT_CONFIG.specialDiceCount);
@@ -32,7 +33,7 @@
 </script>
 
 <div class="rules-config card">
-  <button type="button" class="rules-config__back" onclick={onBack}>← 返回</button>
+  <button type="button" class="rules-config__back" onclick={onBack} disabled={starting}>← 返回</button>
 
   <h2 class="rules-config__title">游戏规则设置</h2>
 
@@ -46,6 +47,7 @@
       max="10000"
       step="100"
       bind:value={targetScore}
+      disabled={starting}
     />
   </div>
 
@@ -57,6 +59,7 @@
           type="button"
           class="rules-config__seg-btn"
           class:rules-config__seg-btn--active={specialDiceCount === opt.value}
+          disabled={starting}
           onclick={() => (specialDiceCount = opt.value)}
         >
           {opt.label}
@@ -70,8 +73,13 @@
     <p class="rules-config__error" role="alert">{validationError}</p>
   {/if}
 
-  <button type="button" class="btn btn-gilded btn-full rules-config__confirm" onclick={handleConfirm}>
-    确认规则，开始游戏
+  <button
+    type="button"
+    class="btn btn-gilded btn-full rules-config__confirm"
+    disabled={starting}
+    onclick={handleConfirm}
+  >
+    {starting ? '正在开局…' : '确认规则，开始游戏'}
   </button>
 </div>
 

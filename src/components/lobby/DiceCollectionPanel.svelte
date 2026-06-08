@@ -26,6 +26,7 @@
 
   let filter = $state<CodexFilter>('all');
   let selectedId = $state<string>('NormalDie');
+  let mobileDetailOpen = $state(false);
 
   let diceByCategory = $derived(getDiceByCategory());
 
@@ -60,6 +61,11 @@
 
   function selectDie(die: DieDefinition): void {
     selectedId = die.id;
+    mobileDetailOpen = true;
+  }
+
+  function closeMobileDetail(): void {
+    mobileDetailOpen = false;
   }
 
   function wildcardNote(die: DieDefinition): string | null {
@@ -73,7 +79,7 @@
     <header class="codex__header">
       <div>
         <h2 id="codex-title" class="codex__title">骰子图鉴</h2>
-        <p class="codex__subtitle">共 {totalCount} 种 · 数据与选骰页一致</p>
+        <p class="codex__subtitle">共 {totalCount} 种 · 点击骰子查看详情</p>
       </div>
       {#if onClose}
         <button type="button" class="codex__close" onclick={onClose} aria-label="关闭">×</button>
@@ -107,6 +113,7 @@
                 <DiceCard
                   {die}
                   readonly
+                  compact
                   selected={selectedId === die.id}
                   onclick={() => selectDie(die)}
                 />
@@ -117,8 +124,22 @@
       </div>
 
       {#if selectedDie}
-        <aside class="codex__detail panel-parchment" aria-live="polite">
-          <h3 class="codex__detail-name">{selectedDie.name}</h3>
+        <aside
+          class="codex__detail panel-parchment"
+          class:codex__detail--open={mobileDetailOpen}
+          aria-live="polite"
+        >
+          <div class="codex__detail-toolbar">
+            <h3 class="codex__detail-name">{selectedDie.name}</h3>
+            <button
+              type="button"
+              class="codex__detail-close"
+              onclick={closeMobileDetail}
+              aria-label="收起详情"
+            >
+              收起
+            </button>
+          </div>
           <p class="codex__detail-meta">
             <span>缩写「{selectedDie.shortName}」</span>
             <span class="codex__detail-dot" aria-hidden="true">·</span>
@@ -146,20 +167,22 @@
     inset: 0;
     z-index: 200;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    padding: var(--layout-gutter);
+    padding: 0;
     background: rgba(0, 0, 0, 0.65);
   }
 
   .codex__inner {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
     max-width: min(920px, 100%);
     width: 100%;
-    max-height: 90vh;
-    padding: var(--space-4);
+    max-height: 100dvh;
+    height: 100dvh;
+    padding: var(--space-3);
+    border-radius: 0;
   }
 
   .codex__header {
@@ -199,12 +222,21 @@
 
   .codex__tabs {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: var(--space-1);
     flex: none;
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .codex__tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .codex__tab {
+    flex: 0 0 auto;
     padding: 0.3rem 0.65rem;
     font-size: 0.75rem;
     border: 1px solid rgba(201, 168, 106, 0.25);
@@ -248,11 +280,65 @@
 
   .codex__grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-2);
   }
 
+  .codex__detail {
+    display: none;
+  }
+
+  .codex__detail--open {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    max-height: min(48dvh, 440px);
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--space-3);
+    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .codex__detail-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .codex__detail-toolbar .codex__detail-name {
+    margin-bottom: 0;
+  }
+
+  .codex__detail-close {
+    flex: none;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(92, 69, 46, 0.35);
+    background: rgba(255, 255, 255, 0.35);
+    color: var(--color-text-on-paper);
+  }
+
   @media (min-width: 520px) {
+    .codex {
+      align-items: center;
+      padding: var(--layout-gutter);
+    }
+
+    .codex__inner {
+      max-height: 90vh;
+      height: auto;
+      padding: var(--space-4);
+      border-radius: var(--radius-card);
+    }
+
     .codex__grid {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -269,15 +355,35 @@
       min-width: 0;
     }
 
+    .codex__tabs {
+      flex-wrap: wrap;
+      overflow: visible;
+    }
+
     .codex__grid {
       grid-template-columns: repeat(2, 1fr);
     }
 
     .codex__detail {
-      flex: 0 0 min(240px, 32%);
-      align-self: flex-start;
+      display: block;
       position: sticky;
       top: 0;
+      flex: 0 0 min(240px, 32%);
+      align-self: flex-start;
+      max-height: none;
+      overflow: visible;
+      padding: var(--space-3);
+      border-radius: var(--radius-card);
+      box-shadow: none;
+    }
+
+    .codex__detail-toolbar {
+      display: block;
+      margin-bottom: 0;
+    }
+
+    .codex__detail-close {
+      display: none;
     }
   }
 

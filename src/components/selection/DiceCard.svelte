@@ -8,13 +8,25 @@
   interface Props {
     die: DieDefinition;
     selected?: boolean;
+    /** 对手已选高亮（虚线框） */
+    opponentPick?: boolean;
     disabled?: boolean;
     /** 图鉴等只读场景：非 button，不套用「未可选」灰显 */
     readonly?: boolean;
+    /** 选骰摘要 / 手机图鉴等紧凑布局 */
+    compact?: boolean;
     onclick?: () => void;
   }
 
-  let { die, selected = false, disabled = false, readonly = false, onclick }: Props = $props();
+  let {
+    die,
+    selected = false,
+    opponentPick = false,
+    disabled = false,
+    readonly = false,
+    compact = false,
+    onclick,
+  }: Props = $props();
 
   const tag = $derived(readonly ? 'article' : 'button');
   const isDisabled = $derived(!readonly && (disabled || !onclick));
@@ -30,7 +42,9 @@
   type={readonly ? undefined : 'button'}
   class="dice-card"
   class:dice-card--selected={selected}
+  class:dice-card--opponent={opponentPick && !selected}
   class:dice-card--readonly={readonly}
+  class:dice-card--compact={compact}
   disabled={isDisabled}
   onclick={onclick}
   role={readonly && onclick ? 'button' : undefined}
@@ -256,5 +270,43 @@
   .dice-card__pct--blocked {
     background: rgba(43, 31, 19, 0.65);
     color: rgba(245, 239, 230, 0.7);
+  }
+
+  .dice-card--opponent {
+    border-color: rgba(201, 168, 106, 0.75);
+    outline: 2px dashed rgba(201, 168, 106, 0.55);
+    outline-offset: 2px;
+    box-shadow: 0 0 10px rgba(201, 168, 106, 0.15);
+  }
+
+  .dice-card--compact {
+    padding: var(--space-1);
+    gap: var(--space-1);
+  }
+
+  .dice-card--compact .dice-card__head {
+    min-height: auto;
+  }
+
+  .dice-card--compact .dice-card__name {
+    font-size: 0.75rem;
+  }
+
+  .dice-card--compact .dice-card__tag {
+    display: none;
+  }
+
+  .dice-card--compact .dice-card__faces {
+    gap: 4px;
+  }
+
+  .dice-card--compact .dice-card__face {
+    min-height: 1.65rem;
+    border-radius: 4px;
+  }
+
+  .dice-card--compact .dice-card__pct {
+    font-size: 0.5rem;
+    padding: 0 2px;
   }
 </style>

@@ -345,6 +345,25 @@ export function getRemoteSelectedDieIds(): number[] {
   return session.state.pendingSelection ?? [];
 }
 
+/** 对手回合：根据 pendingSelection 计算预选得分（与己方 preview 一致） */
+export function getRemoteSelectionPreview(): number {
+  if (!session.state || getIsMyTurn() || session.state.rollCount === 0) return 0;
+  const ids = session.state.pendingSelection ?? [];
+  if (ids.length === 0) return 0;
+  const selectable = session.state.dice.filter((d) => d.active && !d.kept);
+  const { valid, score } = evaluateSelection(selectable, ids);
+  return valid ? score : 0;
+}
+
+/** 选骰阶段：对手已确认的特殊骰 id（己方已提交后才下发） */
+export function getOpponentDicePicks(): string[] {
+  if (!session.state || !session.you || session.state.phase !== 'dice_selection') return [];
+  const n = session.state.config.specialDiceCount;
+  const picks =
+    session.you === 'host' ? session.state.guestDice : session.state.hostDice;
+  return picks.length >= n ? picks : [];
+}
+
 export function isOpponentSelecting(): boolean {
   return getRemoteSelectedDieIds().length > 0;
 }

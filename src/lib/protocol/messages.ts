@@ -46,10 +46,25 @@ export function toClientGameState(state: GameState, you: PlayerId | null): Clien
     return { ...state, opponentDiceReady: opponentReady, ...awayFields };
   }
 
+  const myConfirmed =
+    you === 'host' ? state.hostDice.length >= n : state.guestDice.length >= n;
+  const hostDice =
+    you === 'host'
+      ? state.hostDice
+      : myConfirmed && state.hostDice.length >= n
+        ? state.hostDice
+        : [];
+  const guestDice =
+    you === 'guest'
+      ? state.guestDice
+      : myConfirmed && state.guestDice.length >= n
+        ? state.guestDice
+        : [];
+
   return {
     ...state,
-    hostDice: you === 'host' ? state.hostDice : [],
-    guestDice: you === 'guest' ? state.guestDice : [],
+    hostDice,
+    guestDice,
     opponentDiceReady: opponentReady,
     ...awayFields,
   };

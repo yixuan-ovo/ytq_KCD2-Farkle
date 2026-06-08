@@ -42,6 +42,7 @@
     getSelectionPreview,
     getMySelectedDieIds,
     getRemoteSelectedDieIds,
+    getRemoteSelectionPreview,
     isOpponentSelecting,
     tryReconnect,
     clearError,
@@ -94,6 +95,7 @@
   $effect(() => {
     if (session.state?.phase !== 'lobby') {
       showRulesConfig = false;
+      startPending = false;
     }
   });
 
@@ -189,6 +191,9 @@
   let canBank = $derived(getCanBank());
   let keepPending = $derived(getIsKeepPending());
   let preview = $derived(getSelectionPreview());
+  let remotePreview = $derived(getRemoteSelectionPreview());
+  let turnScorePreview = $derived(isMyTurn ? preview : remotePreview);
+  let previewOwner = $derived<'you' | 'opponent'>(isMyTurn ? 'you' : 'opponent');
   let inLobby = $derived(session.state?.phase === 'lobby');
   let inTurnOrder = $derived(session.state?.phase === 'turn_order');
   let inDiceSelection = $derived(session.state?.phase === 'dice_selection');
@@ -307,12 +312,14 @@
   let copiedCode = $state(false);
   let copiedLink = $state(false);
 
+  let startPending = $state(false);
+
   function handleRulesConfirm(config: {
     targetScore: number;
     specialDiceCount: 0 | 1 | 2 | 3;
   }): void {
+    startPending = true;
     startGame(config);
-    showRulesConfig = false;
   }
 
   async function copyRoomCode(): Promise<void> {
@@ -378,9 +385,12 @@
             <p>该阶段（{session.state.phase}）尚未支持，敬请期待。</p>
           </div>
         {:else if inLobby}
-          {#if showRulesConfig && session.you === 'host'}
+          {#if (showRulesConfig || startPending) && session.you === 'host'}
             <RulesConfigPanel
-              onBack={() => (showRulesConfig = false)}
+              starting={startPending}
+              onBack={() => {
+                if (!startPending) showRulesConfig = false;
+              }}
               onConfirm={handleRulesConfirm}
             />
           {:else}
@@ -457,7 +467,11 @@
                   />
                 </DiceTable>
 
-                <TurnScoreCard score={session.state.turnScore} {preview} />
+                <TurnScoreCard
+                  score={session.state.turnScore}
+                  preview={turnScorePreview}
+                  {previewOwner}
+                />
               </div>
             </div>
           </div>
